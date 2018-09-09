@@ -75,12 +75,12 @@ def main():
                     I = utils.make_grid(images_test[0:16,:,:,:], nrow=4, normalize=True, scale_each=True)
                     attn1 = visualize_attn_softmax(I, c1, up_factor=8, nrow=4)
                     attn2 = visualize_attn_softmax(I, c2, up_factor=16, nrow=4)
-                    writer.add_image('test/image', I, epoch)
-                    writer.add_image('test/attention_map_1', attn1, epoch)
-                    writer.add_image('test/attention_map_2', attn2, epoch)
+                    writer.add_image('test/image', I, i)
+                    writer.add_image('test/attention_map_1', attn1, i)
+                    writer.add_image('test/attention_map_2', attn2, i)
                     if c3 is not None:
                         attn3 = visualize_attn_softmax(I, c3, up_factor=32, nrow=4)
-                        writer.add_image('test/attention_map_3', attn3, epoch)
+                        writer.add_image('test/attention_map_3', attn3, i)
     precision, recall = compute_mean_pecision_recall('test_results.csv')
     print("\navg_precision %.2f%% avg_recall %.2f%%\n" % (100*precision, 100*recall))
 
