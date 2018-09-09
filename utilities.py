@@ -5,7 +5,7 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 import torchvision.utils as utils
-from sklearn.metrics import average_precision_score, precision_recall_curve, roc_auc_score
+from sklearn.metrics import average_precision_score, precision_recall_curve, roc_auc_score, precision_score, recall_score
 
 import matplotlib
 matplotlib.use('Agg')
@@ -64,7 +64,7 @@ def compute_metrics(result_file):
             pred.append(prob[gt[i]])
             i += 1
     # compute mAP
-    mAP = average_precision_score(gt, pred)
+    mAP = average_precision_score(gt, pred, average='macro')
     # compute precision and recall
     precision, recall, __ = precision_recall_curve(gt, pred)
     # compute AUC
@@ -97,31 +97,7 @@ def compute_mean_pecision_recall(result_file):
         for row in reader:
             prob = np.array(list(map(float, row)))
             pred.append(np.argmax(prob))
-    # record muli class precision
-    precision = []
-    for cls in range(2):
-        correct = 0
-        cnt = 0
-        for i in range(len(pred)):
-            if pred[i] == cls:
-                cnt += 1
-                if pred[i] == gt[i]:
-                    correct += 1
-        if cnt != 0:
-            precision.append(correct / cnt)
-        else:
-            precision.append(0)
-    precision = np.mean(np.array(precision))
-    # record muli class recall
-    recall = []
-    for cls in range(2):
-        correct = 0
-        cnt = 0
-        for i in range(len(gt)):
-            if gt[i] == cls:
-                cnt += 1
-                if pred[i] == gt[i]:
-                    correct += 1
-        recall.append(correct / cnt)
-    recall = np.mean(np.array(recall))
+    # compute precision & recall
+    precision = precision_score(gt, pred, average='macro')
+    recall    = recall_score(gt, pred, average='macro')
     return precision, recall
