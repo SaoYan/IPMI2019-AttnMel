@@ -162,11 +162,10 @@ def main():
                     responses = [responses[i] for i in range(responses.shape[0])]
                     csv_writer.writerows(responses)
             # log scalars
-            precision = avg_precision('test_results.csv')
-            recall = avg_recall('test_results.csv')
+            precision, recall = compute_mean_pecision_recall('test_results.csv')
             writer.add_scalar('test/accuracy', correct/total, epoch)
-            writer.add_scalar('test/avg_precision', precision, epoch)
-            writer.add_scalar('test/avg_recall', recall, epoch)
+            writer.add_scalar('test/mean_precision', precision, epoch)
+            writer.add_scalar('test/mean_recall', recall, epoch)
             print("\n[epoch %d] test result: accuracy %.2f%% \navg_precision %.2f%% avg_recall %.2f%%\n" %
                 (epoch, 100*correct/total, 100*precision, 100*recall))
             # log images
