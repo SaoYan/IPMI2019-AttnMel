@@ -59,7 +59,7 @@ def main():
     print('\nstart testing ...\n')
     writer = SummaryWriter(opt.outf)
     with torch.no_grad():
-        with open('test_results_.csv', 'wt', newline='') as csv_file:
+        with open('test_results.csv', 'wt', newline='') as csv_file:
             csv_writer = csv.writer(csv_file, delimiter=',')
             for i, data in enumerate(testloader, 0):
                 images_test, labels_test = data
