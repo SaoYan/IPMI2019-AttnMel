@@ -5,6 +5,12 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 import torchvision.utils as utils
+from sklearn.metrics import average_precision_score, precision_recall_curve, roc_auc_score
+
+import matplotlib
+matplotlib.use('Agg')
+from matplotlib.backends.backend_agg import FigureCanvasAgg
+from matplotlib.figure import Figure
 
 def visualize_attn_softmax(I, c, up_factor, nrow):
     # image
@@ -43,7 +49,43 @@ def visualize_attn_sigmoid(I, c, up_factor, nrow):
     vis = (vis - min_val) / (max_val - min_val)
     return torch.from_numpy(vis).permute(2,0,1)
 
-def avg_precision(result_file):
+def compute_metrics(result_file):
+    # groundtruth
+    with open('test.csv', 'r', newline='') as csv_file:
+        reader = csv.reader(csv_file, delimiter=',')
+        gt = [int(row[1]) for row in reader]
+    # prediction
+    pred = []
+    i = 0
+    with open(result_file, 'r', newline='') as csv_file:
+        reader = csv.reader(csv_file, delimiter=',')
+        for row in reader:
+            prob = list(map(float, row))
+            pred.append(prob[gt[i]])
+            i += 1
+    # compute mAP
+    mAP = average_precision_score(gt, pred)
+    # compute precision and recall
+    precision, recall, __ = precision_recall_curve(gt, pred)
+    # compute AUC
+    AUC = roc_auc_score(gt, pred)
+    # plot ROC curve
+    fig = Figure()
+    canvas = FigureCanvasAgg(fig)
+    ax = fig.gca()
+    ax.step(recall, precision, color='b', alpha=0.2, where='post')
+    ax.fill_between(recall, precision, step='post', alpha=0.2, color='b')
+    ax.set_xlabel('Recall')
+    ax.set_ylabel('Precision')
+    ax.set_ylim([0.0, 1.05])
+    ax.set_xlim([0.0, 1.0])
+    canvas.draw()
+    I = np.fromstring(canvas.tostring_rgb(), dtype='uint8', sep='')
+    I = I.reshape(canvas.get_width_height()[::-1]+(3,))
+    I = np.transpose(I, [2,0,1])
+    return mAP, AUC, torch.Tensor(np.float32(I))
+
+def compute_mean_pecision_recall(result_file):
     # groundtruth
     with open('test.csv', 'r', newline='') as csv_file:
         reader = csv.reader(csv_file, delimiter=',')
@@ -57,7 +99,7 @@ def avg_precision(result_file):
             pred.append(np.argmax(prob))
     # record muli class precision
     precision = []
-    for cls in range(7):
+    for cls in range(2):
         correct = 0
         cnt = 0
         for i in range(len(pred)):
@@ -69,23 +111,10 @@ def avg_precision(result_file):
             precision.append(correct / cnt)
         else:
             precision.append(0)
-    return np.mean(np.array(precision))
-
-def avg_recall(result_file):
-    # groundtruth
-    with open('test.csv', 'r', newline='') as csv_file:
-        reader = csv.reader(csv_file, delimiter=',')
-        gt = [int(row[1]) for row in reader]
-    # prediction
-    pred = []
-    with open(result_file, 'r', newline='') as csv_file:
-        reader = csv.reader(csv_file, delimiter=',')
-        for row in reader:
-            prob = np.array(list(map(float, row)))
-            pred.append(np.argmax(prob))
+    precision = np.mean(np.array(precision))
     # record muli class recall
     recall = []
-    for cls in range(7):
+    for cls in range(2):
         correct = 0
         cnt = 0
         for i in range(len(gt)):
@@ -94,4 +123,5 @@ def avg_recall(result_file):
                 if pred[i] == gt[i]:
                     correct += 1
         recall.append(correct / cnt)
-    return np.mean(np.array(recall))
+    recall = np.mean(np.array(recall))
+    return precision, recall
