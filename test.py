@@ -81,8 +81,7 @@ def main():
                     if c3 is not None:
                         attn3 = visualize_attn_softmax(I, c3, up_factor=32, nrow=4)
                         writer.add_image('test/attention_map_3', attn3, epoch)
-    precision = avg_precision('test_results.csv')
-    recall = avg_recall('test_results.csv')
+    precision, recall = compute_mean_pecision_recall('test_results.csv')
     print("\navg_precision %.2f%% avg_recall %.2f%%\n" % (100*precision, 100*recall))
 
 if __name__ == "__main__":
