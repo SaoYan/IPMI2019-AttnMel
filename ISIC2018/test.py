@@ -9,7 +9,7 @@ import torch.nn.functional as F
 import torchvision
 import torchvision.utils as utils
 import torchvision.transforms as transforms
-from model2 import AttnVGG
+from model4 import AttnVGG
 from utilities import *
 from data import preprocess_data, ISIC2018
 
@@ -35,7 +35,7 @@ def main():
         transforms.Resize(300),
         transforms.CenterCrop(im_size),
         transforms.ToTensor(),
-        # transforms.Normalize((0.6273, 0.6273, 0.6273), (0.1816, 0.1816, 0.1816)) 
+        # transforms.Normalize((0.6273, 0.6273, 0.6273), (0.1816, 0.1816, 0.1816))
         transforms.Normalize((0.7558,0.5230,0.5437), (0.1027, 0.1319, 0.1468))
     ])
     testset = ISIC2018(csv_file='test.csv', shuffle=False, transform=transform_test)

@@ -15,6 +15,31 @@ class ConvBlock(nn.Module):
     def forward(self, x):
         return self.op(x)
 
+class ResNetBottleneckBlock(nn.Module):
+    def __init__(self, in_features, out_features, stride=1):
+        super(ResNetBottleneckBlock, self).__init__()
+        self.downsample = None
+        res_features = int(out_features / 4)
+        self.res = nn.Sequential(
+            nn.BatchNorm2d(in_features, affine=True, track_running_stats=True),
+            nn.ReLU(inplace=True),
+            nn.Conv2d(in_features, res_features, kernel_size=1, padding=0, bias=False),
+            nn.BatchNorm2d(res_features, affine=True, track_running_stats=True),
+            nn.ReLU(inplace=True),
+            nn.Conv2d(res_features, res_features, kernel_size=3, padding=1, stride=stride, bias=False),
+            nn.BatchNorm2d(res_features, affine=True, track_running_stats=True),
+            nn.ReLU(inplace=True),
+            nn.Conv2d(res_features, out_features, kernel_size=1, padding=0, bias=False),
+        )
+        #  projection shortcut
+        if (stride != 1) or (in_features != out_features):
+            self.downsample = nn.Conv2d(in_channels=in_features, out_channels=out_features, kernel_size=1, stride=stride, bias=False)
+    def forward(self, x):
+        residual = self.res(x)
+        if self.downsample is not None:
+            x = self.downsample(x)
+        return x + residual
+
 class ProjectorBlock(nn.Module):
     def __init__(self, in_features, out_features):
         super(ProjectorBlock, self).__init__()
@@ -66,3 +91,35 @@ class GridAttentionBlock(nn.Module):
         if self.output_transform:
             f = self.trans(f)
         return c.view(N,1,W,H), f.view(N,C,-1).sum(dim=2)
+
+class SelfAttentionBlock(nn.Module):
+    def __init__(self, transform=False, normalize_attn=True, in_features=None, attn_features=None):
+        super(SelfAttentionBlock, self).__init__()
+        self.transform = transform
+        self.normalize_attn = normalize_attn
+        if self.transform:
+            self.theta   = nn.Conv2d(in_channels=in_features, out_channels=attn_features, kernel_size=1, padding=0, bias=False)
+            self.phi     = nn.Conv2d(in_channels=in_features, out_channels=attn_features, kernel_size=1, padding=0, bias=False)
+            self.g       = nn.Conv2d(in_channels=in_features, out_channels=attn_features, kernel_size=1, padding=0, bias=False)
+            self.restore = nn.Conv2d(in_channels=attn_features, out_channels=in_features, kernel_size=1, padding=0, bias=False)
+    def forward(self, x):
+        N, C, W, H = x.size()
+        # transform
+        if self.transform:
+            x1 = self.theta(x).view(N,C,-1).permute((0,2,1)) # N x WH x C
+            x2 = self.phi(x).view(N,C,-1)                    # N x C X WH
+            x3 = self.g(x).view(N,C,-1)                      # N x C X WH
+        else:
+            x1 = x.view(N,C,-1).permute((0,2,1)) # N x WH x C
+            x2 = x.view(N,C,-1)                  # N x C X WH
+            x3 = x.view(N,C,-1)                  # N x C X WH
+        # attention
+        c = torch.bmm(x1, x2)
+        if self.normalize_attn:
+            attn = x3.bmm(F.softmax(c.view(N,-1),dim=1).view(N,W*H,W*H)).view(N,C,W,H)
+        else:
+            attn = x3.bmm(F.sigmoid(c)).view(N,C,W,H)
+        # restore feature
+        if self.transform:
+            attn = self.restore(attn)
+        return c, x + attn
