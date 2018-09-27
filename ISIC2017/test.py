@@ -36,7 +36,7 @@ def main():
         transforms.Resize((300,300)),
         transforms.CenterCrop(im_size),
         transforms.ToTensor(),
-        transforms.Normalize((0.7099, 0.5846, 0.5359), (0.0834, 0.1083, 0.1245))
+        transforms.Normalize((0.7066, 0.5732, 0.5188), (0.0836, 0.1153, 0.1322))
     ])
     testset = ISIC2017(csv_file='test.csv', shuffle=False, transform=transform_test)
     testloader = torch.utils.data.DataLoader(testset, batch_size=64, shuffle=False, num_workers=6)

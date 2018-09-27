@@ -62,6 +62,14 @@ class ISIC2017(udata.Dataset):
         pair = self.pairs[idx]
         image = Image.open(pair[0])
         label = int(pair[1])
+        # center crop
+        width, height = image.size
+        new_size = min(width, height)
+        left = (width - new_size)/2
+        top = (height - new_size)/2
+        right = (width + new_size)/2
+        bottom = (height + new_size)/2
+        image = image.crop((left, top, right, bottom))
         if self.transform:
             image = self.transform(image)
         return image, label

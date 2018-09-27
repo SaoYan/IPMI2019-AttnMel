@@ -12,7 +12,7 @@ import torchvision
 import torchvision.utils as utils
 import torchvision.transforms as transforms
 from model5 import AttnVGG
-from model6 import AttnResNet
+from model7 import AttnResNet
 from loss import FocalLoss
 from data import preprocess_data, ISIC2017
 from utilities import *
@@ -58,18 +58,18 @@ def main():
         transforms.RandomVerticalFlip(),
         transforms.RandomHorizontalFlip(),
         transforms.ToTensor(),
-        transforms.Normalize((0.7099, 0.5846, 0.5359), (0.0834, 0.1083, 0.1245))
+        transforms.Normalize((0.7066, 0.5732, 0.5188), (0.0836, 0.1153, 0.1322))
     ])
     transform_test = transforms.Compose([
         transforms.Resize((300,300)),
         transforms.CenterCrop(im_size),
         transforms.ToTensor(),
-        transforms.Normalize((0.7099, 0.5846, 0.5359), (0.0834, 0.1083, 0.1245))
+        transforms.Normalize((0.7066, 0.5732, 0.5188), (0.0836, 0.1153, 0.1322))
     ])
     trainset = ISIC2017(csv_file=train_file, shuffle=True, transform=transform_train)
-    trainloader = torch.utils.data.DataLoader(trainset, batch_size=opt.batch_size, shuffle=True, num_workers=6)
+    trainloader = torch.utils.data.DataLoader(trainset, batch_size=opt.batch_size, shuffle=True, num_workers=8)
     testset = ISIC2017(csv_file='test.csv', shuffle=False, transform=transform_test)
-    testloader = torch.utils.data.DataLoader(testset, batch_size=32, shuffle=False, num_workers=6)
+    testloader = torch.utils.data.DataLoader(testset, batch_size=32, shuffle=False, num_workers=8)
     # mean & std of the dataset
     '''
     Mean = torch.zeros(3)
@@ -213,9 +213,10 @@ def main():
                 # otherwise depend on log_images
                 print('\nlog images ...\n')
                 I_train = utils.make_grid(images_disp[0], nrow=4, normalize=True, scale_each=True)
-                I_test = utils.make_grid(images_disp[1], nrow=4, normalize=True, scale_each=True)
                 writer.add_image('train/image', I_train, epoch)
-                writer.add_image('test/image', I_test, epoch)
+                if epoch == 0: # the test data is unshuffled, display only once
+                    I_test = utils.make_grid(images_disp[1], nrow=4, normalize=True, scale_each=True)
+                    writer.add_image('test/image', I_test, epoch)
             if not opt.no_attention:
                 print('\nlog attention maps ...\n')
                 # training data
