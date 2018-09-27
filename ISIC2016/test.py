@@ -9,8 +9,7 @@ import torch.nn.functional as F
 import torchvision
 import torchvision.utils as utils
 import torchvision.transforms as transforms
-from model5 import AttnVGG
-from model7 import AttnResNet
+from model2 import AttnVGG
 from utilities import *
 from data import preprocess_data, ISIC2016
 
@@ -18,13 +17,9 @@ os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"
 os.environ["CUDA_VISIBLE_DEVICES"] = "0,1"
 
 parser = argparse.ArgumentParser(description="Attn-SKin-FocalLoss-test")
-
 parser.add_argument("--preprocess", type=bool, default=False, help="whether to run preprocess_data")
-parser.add_argument("--outf", type=str, default="logs_test", help='path of log files')
-
-parser.add_argument("--model", type=str, default="VGGNet", help='VGGNet or ResNet')
+parser.add_argument("--outf", type=str, default="log_test", help='path of log files')
 parser.add_argument("--no_attention", action='store_true', help='turn off attention')
-parser.add_argument("--log_images", action='store_true', help='log images')
 
 opt = parser.parse_args()
 
@@ -36,7 +31,7 @@ def main():
         transforms.Resize((300,300)),
         transforms.CenterCrop(im_size),
         transforms.ToTensor(),
-        transforms.Normalize((0.7281, 0.6111, 0.5550), (0.0957, 0.1277, 0.1521))
+        transforms.Normalize((0.7268, 0.5968, 0.5362), (0.0905, 0.1303, 0.1525))
     ])
     testset = ISIC2016(csv_file='test.csv', shuffle=False, transform=transform_test)
     testloader = torch.utils.data.DataLoader(testset, batch_size=64, shuffle=False, num_workers=6)
@@ -48,15 +43,7 @@ def main():
         print('\nturn on attention ...\n')
     else:
         print('\nturn off attention ...\n')
-
-    if opt.model == 'VGGNet':
-        print('\nbase model: VGGNet ...\n')
-        net = AttnVGG(num_classes=2, attention=not opt.no_attention, normalize_attn=True)
-    elif opt.model == 'ResNet':
-        print('\nbase model: ResNet ...\n')
-        net = AttnResNet(num_classes=2, attention=not opt.no_attention, normalize_attn=True)
-    else:
-        raise NotImplementedError("Invalid base model name!")
+    net = AttnVGG(num_classes=2, attention=not opt.no_attention, normalize_attn=True)
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     device_ids = [0,1]
     model = nn.DataParallel(net, device_ids=device_ids).to(device)
@@ -84,7 +71,7 @@ def main():
                 responses = [responses[i] for i in range(responses.shape[0])]
                 csv_writer.writerows(responses)
                 # log images
-                if not opt.no_attention and opt.log_images:
+                if not opt.no_attention:
                     __, c1, c2, c3 = model.forward(images_test[0:16,:,:,:])
                     I = utils.make_grid(images_test[0:16,:,:,:], nrow=4, normalize=True, scale_each=True)
                     attn1 = visualize_attn_softmax(I, c1, up_factor=8, nrow=4)

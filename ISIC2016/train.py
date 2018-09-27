@@ -12,7 +12,7 @@ import torchvision
 import torchvision.utils as utils
 import torchvision.transforms as transforms
 from model5 import AttnVGG
-from model6 import AttnResNet
+from model7 import AttnResNet
 from loss import FocalLoss
 from data import preprocess_data, ISIC2016
 from utilities import *
@@ -36,7 +36,7 @@ parser.add_argument("--initialize", type=str, default="kaimingNormal", help='kai
 parser.add_argument("--focal_loss", action='store_true', help='turn on focal loss (otherwise use cross entropy loss)')
 parser.add_argument("--no_attention", action='store_true', help='turn off attention')
 parser.add_argument("--over_sample", action='store_true', help='offline oversampling')
-parser.add_argument("--log_images", action='store_true', help='log images')
+parser.add_argument("--log_images", action='store_true', help='offline oversampling')
 
 opt = parser.parse_args()
 
@@ -58,20 +58,20 @@ def main():
         transforms.RandomVerticalFlip(),
         transforms.RandomHorizontalFlip(),
         transforms.ToTensor(),
-        transforms.Normalize((0.7281, 0.6111, 0.5550), (0.0957, 0.1277, 0.1521))
+        transforms.Normalize((0.7268, 0.5968, 0.5362), (0.0905, 0.1303, 0.1525))
     ])
     transform_test = transforms.Compose([
         transforms.Resize((300,300)),
         transforms.CenterCrop(im_size),
         transforms.ToTensor(),
-        transforms.Normalize((0.7281, 0.6111, 0.5550), (0.0957, 0.1277, 0.1521))
+        transforms.Normalize((0.7268, 0.5968, 0.5362), (0.0905, 0.1303, 0.1525))
     ])
     trainset = ISIC2016(csv_file=train_file, shuffle=True, transform=transform_train)
     trainloader = torch.utils.data.DataLoader(trainset, batch_size=opt.batch_size, shuffle=True, num_workers=6)
     testset = ISIC2016(csv_file='test.csv', shuffle=False, transform=transform_test)
     testloader = torch.utils.data.DataLoader(testset, batch_size=32, shuffle=False, num_workers=6)
     # mean & std of the dataset
-    '''
+
     Mean = torch.zeros(3)
     Std = torch.zeros(3)
     for data in trainloader:
@@ -84,7 +84,7 @@ def main():
     print('mean: '), print(Mean.numpy())
     print('std: '), print(Std.numpy())
     return
-    '''
+
     print('\ndone\n')
 
     # load models
@@ -100,7 +100,7 @@ def main():
         net = AttnVGG(num_classes=2, attention=not opt.no_attention, normalize_attn=True, init=opt.initialize)
     elif opt.model == 'ResNet':
         print('\nbase model: ResNet ...\n')
-        net = AttnResNet(num_classes=2, attention=not opt.no_attention, normalize_attn=True, init=opt.initialize)
+        net = AttnResNet(num_classes=2, attention=not opt.no_attention, normalize_attn=False, init=opt.initialize)
     else:
         raise NotImplementedError("Invalid base model name!")
 
@@ -208,7 +208,6 @@ def main():
             print("\n[epoch %d] test result: accuracy %.2f%% \nmean precision %.2f%% mean recall %.2f%% \nmAP %.2f%% AUC %.4f\n" %
                 (epoch, 100*correct/total, 100*precision, 100*recall, 100*mAP, AUC))
             # log images
-            '''
             if not opt.no_attention or opt.log_images:
                 # if attention is on, be sure to log images
                 # otherwise depend on log_images
@@ -241,7 +240,6 @@ def main():
                 if c3 is not None:
                     attn3 = visualize_attn_softmax(I_test, c3, up_factor=4*opt.base_up_factor, nrow=4)
                     writer.add_image('test/attention_map_3', attn3, epoch)
-            '''
 
 if __name__ == "__main__":
     if opt.preprocess:
