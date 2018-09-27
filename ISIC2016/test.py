@@ -9,17 +9,21 @@ import torch.nn.functional as F
 import torchvision
 import torchvision.utils as utils
 import torchvision.transforms as transforms
-from model2 import AttnVGG
+from model5 import AttnVGG
+from model7 import AttnResNet
 from utilities import *
 from data import preprocess_data, ISIC2016
 
 os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"
 os.environ["CUDA_VISIBLE_DEVICES"] = "0,1"
 
-parser = argparse.ArgumentParser(description="Attn-SKin-FocalLoss-test")
 parser.add_argument("--preprocess", type=bool, default=False, help="whether to run preprocess_data")
 parser.add_argument("--outf", type=str, default="log_test", help='path of log files')
+parser.add_argument("--base_up_factor", type=int, default=8, help="number of epochs")
+
+parser.add_argument("--model", type=str, default="VGGNet", help='VGGNet or ResNet')
 parser.add_argument("--no_attention", action='store_true', help='turn off attention')
+parser.add_argument("--log_images", action='store_true', help='log images')
 
 opt = parser.parse_args()
 
@@ -43,7 +47,15 @@ def main():
         print('\nturn on attention ...\n')
     else:
         print('\nturn off attention ...\n')
-    net = AttnVGG(num_classes=2, attention=not opt.no_attention, normalize_attn=True)
+
+    if opt.model == 'VGGNet':
+        print('\nbase model: VGGNet ...\n')
+        net = AttnVGG(num_classes=2, attention=not opt.no_attention, normalize_attn=True)
+    elif opt.model == 'ResNet':
+        print('\nbase model: ResNet ...\n')
+        net = AttnResNet(num_classes=2, attention=not opt.no_attention, normalize_attn=True)
+    else:
+        raise NotImplementedError("Invalid base model name!")
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     device_ids = [0,1]
     model = nn.DataParallel(net, device_ids=device_ids).to(device)
@@ -71,16 +83,17 @@ def main():
                 responses = [responses[i] for i in range(responses.shape[0])]
                 csv_writer.writerows(responses)
                 # log images
-                if not opt.no_attention:
+                if not opt.no_attention and opt.log_images:
                     __, c1, c2, c3 = model.forward(images_test[0:16,:,:,:])
                     I = utils.make_grid(images_test[0:16,:,:,:], nrow=4, normalize=True, scale_each=True)
-                    attn1 = visualize_attn_softmax(I, c1, up_factor=8, nrow=4)
-                    attn2 = visualize_attn_softmax(I, c2, up_factor=16, nrow=4)
-                    writer.add_image('test/image', I, i)
-                    writer.add_image('test/attention_map_1', attn1, i)
-                    writer.add_image('test/attention_map_2', attn2, i)
+                    if c1 is not None:
+                        attn1 = visualize_attn_softmax(I_test, c1, up_factor=opt.base_up_factor, nrow=4)
+                        writer.add_image('test/attention_map_1', attn1, i)
+                    if c2 is not None:
+                        attn2 = visualize_attn_softmax(I_test, c2, up_factor=2*opt.base_up_factor, nrow=4)
+                        writer.add_image('test/attention_map_2', attn2, i)
                     if c3 is not None:
-                        attn3 = visualize_attn_softmax(I, c3, up_factor=32, nrow=4)
+                        attn3 = visualize_attn_softmax(I_test, c3, up_factor=4*opt.base_up_factor, nrow=4)
                         writer.add_image('test/attention_map_3', attn3, i)
     mAP, AUC, __ = compute_metrics('test_results.csv')
     precision, recall = compute_mean_pecision_recall('test_results.csv')
