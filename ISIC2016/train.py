@@ -71,7 +71,7 @@ def main():
     testset = ISIC2016(csv_file='test.csv', shuffle=False, transform=transform_test)
     testloader = torch.utils.data.DataLoader(testset, batch_size=32, shuffle=False, num_workers=6)
     # mean & std of the dataset
-
+    '''
     Mean = torch.zeros(3)
     Std = torch.zeros(3)
     for data in trainloader:
@@ -84,7 +84,7 @@ def main():
     print('mean: '), print(Mean.numpy())
     print('std: '), print(Std.numpy())
     return
-
+    '''
     print('\ndone\n')
 
     # load models
