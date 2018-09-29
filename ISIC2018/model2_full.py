@@ -5,8 +5,7 @@ from blocks import ConvBlock, LinearAttentionBlock, ProjectorBlock
 from initialize import *
 
 '''
-Linear attention
-Pay attention after max-pooling
+complete VGG16
 '''
 
 class AttnVGG(nn.Module):
@@ -19,21 +18,15 @@ class AttnVGG(nn.Module):
         self.conv_block3 = ConvBlock(128, 256, 3)
         self.conv_block4 = ConvBlock(256, 512, 3)
         self.conv_block5 = ConvBlock(512, 512, 3)
-        self.feature = nn.Sequential(
-            nn.Conv2d(in_channels=512, out_channels=512, kernel_size=1, padding=0, bias=True),
-            nn.AdaptiveAvgPool2d(output_size=(1,1)) # gloal average pooling
+        self.classify = nn.Sequential(
+            nn.Linear(in_features=512*8*8, out_features=4096, bias=True),
+            nn.ReLU(inplace=True),
+            nn.Dropout(),
+            nn.Linear(in_features=4096, out_features=4096, bias=True),
+            nn.ReLU(True),
+            nn.Dropout(),
+            nn.Linear(in_features=512, out_features=num_classes, bias=True)
         )
-        # Projectors & Compatibility functions
-        if self.attention:
-            self.projector = ProjectorBlock(256, 512)
-            self.attn1 = LinearAttentionBlock(512, normalize_attn=normalize_attn)
-            self.attn2 = LinearAttentionBlock(512, normalize_attn=normalize_attn)
-            self.attn3 = LinearAttentionBlock(512, normalize_attn=normalize_attn)
-        # final classification layer
-        if self.attention:
-            self.classify = nn.Linear(in_features=512*3, out_features=num_classes, bias=True)
-        else:
-            self.classify = nn.Linear(in_features=512, out_features=num_classes, bias=True)
         # initialize
         if init == 'kaimingNormal':
             weights_init_kaimingNormal(self)
@@ -51,17 +44,9 @@ class AttnVGG(nn.Module):
         block2 = F.max_pool2d(self.conv_block2(block1), kernel_size=2, stride=2) # /4
         l1 = F.max_pool2d(self.conv_block3(block2), kernel_size=2, stride=2) # /8
         l2 = F.max_pool2d(self.conv_block4(l1), kernel_size=2, stride=2) # /16
-        l3 = F.max_pool2d(self.conv_block5(l2), kernel_size=2, stride=2) # /32
-        g = self.feature(l3) # /32 --> batch_sizex512x1x1
-        # pay attention
-        if self.attention:
-            c1, g1 = self.attn1(self.projector(l1), g)
-            c2, g2 = self.attn2(l2, g)
-            c3, g3 = self.attn3(l3, g)
-            g_hat = torch.cat((g1,g2,g3), dim=1) # batch_sizexC
-            # classification layer
-            out = self.classify(g_hat) # batch_sizexnum_classes
-        else:
-            c1, c2, c3 = None, None, None
-            out = self.classify(torch.squeeze(g))
+        l3 = F.max_pool2d(self.conv_block5(l2), kernel_size=2, stride=2) # /32, batch_sizex512x8x8
+        N, __, __, __ = l3.size()
+        l3 = l3.view(N, -1)
+        c1, c2, c3 = None, None, None
+        out = self.classify(l3)
         return [out, c1, c2, c3]

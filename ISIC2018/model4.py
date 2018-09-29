@@ -6,7 +6,7 @@ from initialize import *
 
 '''
 Grid attention
-Pay attention before max-pooling
+Pay attention after max-pooling
 '''
 
 class AttnVGG(nn.Module):
