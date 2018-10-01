@@ -17,6 +17,8 @@ from data import preprocess_data, ISIC2016
 os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"
 os.environ["CUDA_VISIBLE_DEVICES"] = "0,1"
 
+parser = argparse.ArgumentParser(description="Attn-Skin-Lesion")
+
 parser.add_argument("--preprocess", type=bool, default=False, help="whether to run preprocess_data")
 parser.add_argument("--outf", type=str, default="log_test", help='path of log files')
 parser.add_argument("--base_up_factor", type=int, default=8, help="number of epochs")
