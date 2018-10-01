@@ -20,8 +20,8 @@ def preprocess_data(root_dir):
             writer.writerow([filename] + ['1'])
         for filename in nevus:
             writer.writerow([filename] + ['0'])
-        for filename in sk:
-            writer.writerow([filename] + ['0'])
+        # for filename in sk:
+        #     writer.writerow([filename] + ['0'])
     # training data oversample
     melanoma = glob.glob(os.path.join(root_dir, 'Train', 'melanoma', '*.jpg'))
     nevus    = glob.glob(os.path.join(root_dir, 'Train', 'nevus', '*.jpg'))
@@ -33,8 +33,8 @@ def preprocess_data(root_dir):
                 writer.writerow([filename] + ['1'])
         for filename in nevus:
             writer.writerow([filename] + ['0'])
-        for filename in sk:
-            writer.writerow([filename] + ['0'])
+        # for filename in sk:
+        #     writer.writerow([filename] + ['0'])
     # test data
     melanoma = glob.glob(os.path.join(root_dir, 'Test', 'melanoma', '*.jpg'))
     nevus    = glob.glob(os.path.join(root_dir, 'Test', 'nevus', '*.jpg'))
@@ -45,8 +45,8 @@ def preprocess_data(root_dir):
             writer.writerow([filename] + ['1'])
         for filename in nevus:
             writer.writerow([filename] + ['0'])
-        for filename in sk:
-            writer.writerow([filename] + ['0'])
+        # for filename in sk:
+        #     writer.writerow([filename] + ['0'])
 
 class ISIC2017(udata.Dataset):
     def __init__(self, csv_file, shuffle=False, transform=None):
