@@ -85,18 +85,20 @@ def main():
                 responses = [responses[i] for i in range(responses.shape[0])]
                 csv_writer.writerows(responses)
                 # log images
-                if not opt.no_attention and opt.log_images:
-                    __, c1, c2, c3 = model.forward(images_test[0:16,:,:,:])
+                if opt.log_images:
                     I = utils.make_grid(images_test[0:16,:,:,:], nrow=4, normalize=True, scale_each=True)
-                    if c1 is not None:
-                        attn1 = visualize_attn_softmax(I_test, c1, up_factor=opt.base_up_factor, nrow=4)
-                        writer.add_image('test/attention_map_1', attn1, i)
-                    if c2 is not None:
-                        attn2 = visualize_attn_softmax(I_test, c2, up_factor=2*opt.base_up_factor, nrow=4)
-                        writer.add_image('test/attention_map_2', attn2, i)
-                    if c3 is not None:
-                        attn3 = visualize_attn_softmax(I_test, c3, up_factor=4*opt.base_up_factor, nrow=4)
-                        writer.add_image('test/attention_map_3', attn3, i)
+                    writer.add_image('test/image', I, i)
+                    if not opt.no_attention:
+                        __, c1, c2, c3 = model.forward(images_test[0:16,:,:,:])
+                        if c1 is not None:
+                            attn1 = visualize_attn_softmax(I_test, c1, up_factor=opt.base_up_factor, nrow=4)
+                            writer.add_image('test/attention_map_1', attn1, i)
+                        if c2 is not None:
+                            attn2 = visualize_attn_softmax(I_test, c2, up_factor=2*opt.base_up_factor, nrow=4)
+                            writer.add_image('test/attention_map_2', attn2, i)
+                        if c3 is not None:
+                            attn3 = visualize_attn_softmax(I_test, c3, up_factor=4*opt.base_up_factor, nrow=4)
+                            writer.add_image('test/attention_map_3', attn3, i)
     mAP, AUC, __ = compute_metrics('test_results.csv')
     precision, recall = compute_mean_pecision_recall('test_results.csv')
     print("\ntest result: accuracy %.2f%% \nmean precision %.2f%% mean recall %.2f%% \nmAP %.2f%% AUC %.4f\n" %
