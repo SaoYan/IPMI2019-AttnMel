@@ -24,10 +24,10 @@ class AttnVGG(nn.Module):
         )
         # Projectors & Compatibility functions
         if self.attention:
-            #self.attn1 = SelfAttentionBlock(in_features=64, attn_features=32, subsample=True, mode='gaussian')
             self.attn2 = SelfAttentionBlock(in_features=128, attn_features=64, subsample=True, mode='gaussian')
             self.attn3 = SelfAttentionBlock(in_features=256, attn_features=128, subsample=True, mode='gaussian')
             self.attn4 = SelfAttentionBlock(in_features=512, attn_features=256, subsample=True, mode='gaussian')
+            self.attn5 = SelfAttentionBlock(in_features=512, attn_features=256, subsample=True, mode='gaussian')
         # final classification layer
         self.classify = nn.Linear(in_features=512, out_features=num_classes, bias=True)
         # initialize
@@ -45,10 +45,10 @@ class AttnVGG(nn.Module):
         # feed forward
         if self.attention:
             block1 = F.max_pool2d(self.conv_block1(x), kernel_size=2, stride=2) # /2
-            block2 = self.attn2(F.max_pool2d(self.conv_block2(block1), kernel_size=2, stride=2)) # /4 
+            block2 = self.attn2(F.max_pool2d(self.conv_block2(block1), kernel_size=2, stride=2)) # /4
             block3 = self.attn3(F.max_pool2d(self.conv_block3(block2), kernel_size=2, stride=2)) # /8
             block4 = self.attn4(F.max_pool2d(self.conv_block4(block3), kernel_size=2, stride=2)) # /16
-            block5 = F.max_pool2d(self.conv_block5(block4), kernel_size=2, stride=2) # /32
+            block5 = self.attn5(F.max_pool2d(self.conv_block5(block4), kernel_size=2, stride=2)) # /32
         else:
             block1 = F.max_pool2d(self.conv_block1(x), kernel_size=2, stride=2) # /2
             block2 = F.max_pool2d(self.conv_block2(block1), kernel_size=2, stride=2) # /4
