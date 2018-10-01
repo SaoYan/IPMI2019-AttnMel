@@ -54,7 +54,7 @@ class ISIC2016(udata.Dataset):
         image = Image.open(pair[0])
         label = int(pair[1])
         width, height = image.size
-        new_size = min(width, height)
+        new_size = 0.8 * min(width, height)
         left = (width - new_size)/2
         top = (height - new_size)/2
         right = (width + new_size)/2

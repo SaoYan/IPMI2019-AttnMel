@@ -64,7 +64,7 @@ class ISIC2017(udata.Dataset):
         label = int(pair[1])
         # center crop
         width, height = image.size
-        new_size = min(width, height)
+        new_size = 0.8 * min(width, height)
         left = (width - new_size)/2
         top = (height - new_size)/2
         right = (width + new_size)/2
