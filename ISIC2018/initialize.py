@@ -22,7 +22,7 @@ def weights_init_kaimingNormal(module):
             if m.bias is not None:
                 nn.init.constant_(m.bias, 0)
         elif isinstance(m, nn.BatchNorm2d):
-            nn.init.uniform_(m.weight, a=0, b=1)
+            nn.init.normal_(m.weight, 0, 0.01)
             nn.init.constant_(m.bias, val=0.)
         elif isinstance(m, nn.Linear):
             nn.init.kaiming_normal_(m.weight, mode='fan_out', nonlinearity='relu')
@@ -50,7 +50,7 @@ def weights_init_xavierNormal(module):
             if m.bias is not None:
                 nn.init.constant_(m.bias, 0)
         elif isinstance(m, nn.BatchNorm2d):
-            nn.init.uniform_(m.weight, a=0, b=1)
+            nn.init.normal_(m.weight, 0, 0.01)
             nn.init.constant_(m.bias, val=0.)
         elif isinstance(m, nn.Linear):
             nn.init.xavier_normal_(m.weight, gain=np.sqrt(2))
