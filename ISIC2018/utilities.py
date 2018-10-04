@@ -61,10 +61,11 @@ def compute_metrics(result_file):
         reader = csv.reader(csv_file, delimiter=',')
         for row in reader:
             prob = list(map(float, row))
-            pred.append(prob[gt[i]])
+            pred.append(prob[1])
             i += 1
     # compute mAP
-    mAP = average_precision_score(gt, pred, average='macro')
+    mAP = average_precision_score(gt, pred)
+    # mAP = average_precision_score(gt, pred, average='samples')
     # compute precision and recall
     precision, recall, __ = precision_recall_curve(gt, pred)
     # compute AUC
@@ -101,3 +102,26 @@ def compute_mean_pecision_recall(result_file):
     precision = precision_score(gt, pred, average='macro')
     recall    = recall_score(gt, pred, average='macro')
     return precision, recall
+
+def returnCAM(I, feature_conv, weight_softmax, class_idx, im_size, nrow):
+    # image
+    img = I.permute((1,2,0)).cpu().numpy()
+    # compute the heatmap
+    weights = weight_softmax[class_idx,:]
+    maps = []
+    for feature in feature_conv:
+        N, C, H, W = feature.shape
+        cam = np.einsum('j,ijk->ik', weights, feature.reshape((N,C,W*H))).reshape(N,W,H)
+        cam = np.expand_dims(cam, 1)
+        maps.append(cam)
+    cam = torch.from_numpy(np.concatenate(maps, axis=0))
+    cam = F.interpolate(cam, size=(im_size,im_size), mode='bilinear', align_corners=False)
+    cam = utils.make_grid(cam, nrow=nrow, normalize=True, scale_each=True)
+    cam = cam.permute((1,2,0)).mul(255).byte().cpu().numpy()
+    cam = cv2.applyColorMap(cam, cv2.COLORMAP_JET)
+    cam = cv2.cvtColor(cam, cv2.COLOR_BGR2RGB)
+    cam = np.float32(cam) / 255
+    vis = img + cam
+    min_val, max_val = np.min(vis), np.max(vis)
+    vis = (vis - min_val) / (max_val - min_val)
+    return torch.from_numpy(vis).permute(2,0,1)
