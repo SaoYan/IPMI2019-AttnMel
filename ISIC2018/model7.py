@@ -43,22 +43,16 @@ class AttnResNet(nn.Module):
         # final classification layer
         self.classify = nn.Linear(in_features=features[4], out_features=num_classes, bias=True)
         # initialize
-        # if init == 'kaimingNormal':
-        #     weights_init_kaimingNormal(self)
-        # elif init == 'kaimingUniform':
-        #     weights_init_kaimingUniform(self)
-        # elif init == 'xavierNormal':
-        #     weights_init_xavierNormal(self)
-        # elif init == 'xavierUniform':
-        #     weights_init_xavierUniform(self)
-        # else:
-        #     raise NotImplementedError("Invalid type of initialization!")
-        for m in self.modules():
-            if isinstance(m, nn.Conv2d):
-                nn.init.kaiming_normal_(m.weight, mode='fan_out', nonlinearity='relu')
-            elif isinstance(m, nn.BatchNorm2d):
-                nn.init.constant_(m.weight, 1)
-                nn.init.constant_(m.bias, 0)
+        if init == 'kaimingNormal':
+            weights_init_kaimingNormal(self)
+        elif init == 'kaimingUniform':
+            weights_init_kaimingUniform(self)
+        elif init == 'xavierNormal':
+            weights_init_xavierNormal(self)
+        elif init == 'xavierUniform':
+            weights_init_xavierUniform(self)
+        else:
+            raise NotImplementedError("Invalid type of initialization!")
     def _make_layer(self, block, in_features, out_features, num_blocks, stride=1, factor=4):
         if stride == 1:
             first_stage = True
