@@ -10,7 +10,7 @@ import torchvision
 import torchvision.utils as utils
 import torchvision.transforms as transforms
 from model5 import AttnVGG
-from model7 import AttnResNet
+from model6 import AttnResNet
 from utilities import *
 from data import preprocess_data, ISIC2018
 
