@@ -100,7 +100,7 @@ def main():
         net = AttnVGG(num_classes=2, attention=not opt.no_attention, normalize_attn=True, init=opt.initialize)
     elif opt.model == 'ResNet':
         print('\nbase model: ResNet ...\n')
-        net = AttnResNet(num_classes=2, attention=not opt.no_attention, normalize_attn=False, init=opt.initialize)
+        net = AttnResNet(num_classes=2, attention=not opt.no_attention, normalize_attn=True, init=opt.initialize)
     else:
         raise NotImplementedError("Invalid base model name!")
 

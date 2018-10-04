@@ -114,14 +114,12 @@ def returnCAM(I, feature_conv, weight_softmax, class_idx, im_size, nrow):
         cam = np.einsum('j,ijk->ik', weights, feature.reshape((N,C,W*H))).reshape(N,W,H)
         cam = np.expand_dims(cam, 1)
         maps.append(cam)
-    cam = torch.from_numpy(np.concatenate(maps, axis=0))
-    cam = F.interpolate(cam, size=(im_size,im_size), mode='bilinear', align_corners=False)
+    cam = np.concatenate(maps, axis=0)
+    cam = F.interpolate(torch.from_numpy(cam), size=(im_size,im_size), mode='bilinear', align_corners=False)
     cam = utils.make_grid(cam, nrow=nrow, normalize=True, scale_each=True)
     cam = cam.permute((1,2,0)).mul(255).byte().cpu().numpy()
     cam = cv2.applyColorMap(cam, cv2.COLORMAP_JET)
     cam = cv2.cvtColor(cam, cv2.COLOR_BGR2RGB)
     cam = np.float32(cam) / 255
-    vis = img + cam
-    min_val, max_val = np.min(vis), np.max(vis)
-    vis = (vis - min_val) / (max_val - min_val)
+    vis = 0.7 * img + 0.3 * cam
     return torch.from_numpy(vis).permute(2,0,1)

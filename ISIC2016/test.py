@@ -12,7 +12,7 @@ import torchvision.transforms as transforms
 from model5 import AttnVGG
 from model6 import AttnResNet
 from utilities import *
-from data import preprocess_data, ISIC2017
+from data import preprocess_data, ISIC2016
 
 os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"
 os.environ["CUDA_VISIBLE_DEVICES"] = "0,1"
@@ -44,7 +44,7 @@ def main():
         transforms.ToTensor(),
         transforms.Normalize((0.6990, 0.5478, 0.4831), (0.0945, 0.1330, 0.1516))
     ])
-    testset = ISIC2017(csv_file='test.csv', shuffle=False, transform=transform_test)
+    testset = ISIC2016(csv_file='test.csv', shuffle=False, transform=transform_test)
     testloader = torch.utils.data.DataLoader(testset, batch_size=64, shuffle=False, num_workers=6)
     print('done')
 
