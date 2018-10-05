@@ -70,6 +70,9 @@ class ISIC2017(udata.Dataset):
         right = (width + new_size)/2
         bottom = (height + new_size)/2
         image = image.crop((left, top, right, bottom))
+        # rotate
+        idx = np.random.randint(0,4)
+        image = image.rotate(idx*90)
         if self.transform:
             image = self.transform(image)
         return image, label

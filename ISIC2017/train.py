@@ -42,14 +42,14 @@ opt = parser.parse_args()
 
 def main():
     # load data
-    print('\nloading the dataset ...\n')
+    print('\nloading the dataset ...\n')\
     if opt.over_sample:
         print('\ndata is offline oversampled ...\n')
-        num_aug = 3
+        num_aug = 5
         train_file = 'train_oversample.csv'
     else:
         print('\nno offline oversampling ...\n')
-        num_aug = 5
+        num_aug = 8
         train_file = 'train.csv'
     im_size = 256
     transform_train = transforms.Compose([

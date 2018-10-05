@@ -53,6 +53,7 @@ class ISIC2016(udata.Dataset):
         pair = self.pairs[idx]
         image = Image.open(pair[0])
         label = int(pair[1])
+        # center crop
         width, height = image.size
         new_size = 0.8 * min(width, height)
         left = (width - new_size)/2
@@ -60,6 +61,9 @@ class ISIC2016(udata.Dataset):
         right = (width + new_size)/2
         bottom = (height + new_size)/2
         image = image.crop((left, top, right, bottom))
+        # rotate
+        idx = np.random.randint(0,4)
+        image = image.rotate(idx*90)
         if self.transform:
             image = self.transform(image)
         return image, label
