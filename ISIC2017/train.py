@@ -42,7 +42,7 @@ opt = parser.parse_args()
 
 def main():
     # load data
-    print('\nloading the dataset ...\n')\
+    print('\nloading the dataset ...\n')
     if opt.over_sample:
         print('\ndata is offline oversampled ...\n')
         num_aug = 5
