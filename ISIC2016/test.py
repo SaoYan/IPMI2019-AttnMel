@@ -44,7 +44,7 @@ def main():
         transforms.ToTensor(),
         transforms.Normalize((0.6990, 0.5478, 0.4831), (0.0945, 0.1330, 0.1516))
     ])
-    testset = ISIC2016(csv_file='test.csv', shuffle=False, transform=transform_test)
+    testset = ISIC2016(csv_file='test.csv', shuffle=False, rotate=False, transform=transform_test)
     testloader = torch.utils.data.DataLoader(testset, batch_size=64, shuffle=False, num_workers=6)
     print('done')
 

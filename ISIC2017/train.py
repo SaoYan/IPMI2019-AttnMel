@@ -68,7 +68,7 @@ def main():
     ])
     trainset = ISIC2017(csv_file=train_file, shuffle=True, transform=transform_train)
     trainloader = torch.utils.data.DataLoader(trainset, batch_size=opt.batch_size, shuffle=True, num_workers=8)
-    testset = ISIC2017(csv_file='test.csv', shuffle=False, transform=transform_test)
+    testset = ISIC2017(csv_file='test.csv', shuffle=False, rotate=False, transform=transform_test)
     testloader = torch.utils.data.DataLoader(testset, batch_size=32, shuffle=False, num_workers=8)
     # mean & std of the dataset
     '''
@@ -197,7 +197,7 @@ def main():
                     responses = [responses[i] for i in range(responses.shape[0])]
                     csv_writer.writerows(responses)
             # log scalars
-            precision, recall = compute_mean_pecision_recall('test_results.csv')
+            precision, recall, __ = compute_mean_pecision_recall('test_results.csv')
             mAP, AUC, ROC = compute_metrics('test_results.csv')
             writer.add_scalar('test/accuracy', correct/total, epoch)
             writer.add_scalar('test/mean_precision', precision, epoch)

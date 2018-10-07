@@ -43,12 +43,13 @@ opt = parser.parse_args()
 def main():
     # load data
     print('\nloading the dataset ...\n')
-    num_aug = 10
     if opt.over_sample:
         print('\ndata is offline oversampled ...\n')
+        num_aug = 10
         train_file = 'train_oversample.csv'
     else:
         print('\nno offline oversampling ...\n')
+        num_aug = 10
         train_file = 'train.csv'
     im_size = 256
     transform_train = transforms.Compose([
@@ -67,7 +68,7 @@ def main():
     ])
     trainset = ISIC2016(csv_file=train_file, shuffle=True, transform=transform_train)
     trainloader = torch.utils.data.DataLoader(trainset, batch_size=opt.batch_size, shuffle=True, num_workers=6)
-    testset = ISIC2016(csv_file='test.csv', shuffle=False, transform=transform_test)
+    testset = ISIC2016(csv_file='test.csv', shuffle=False, rotate=False, transform=transform_test)
     testloader = torch.utils.data.DataLoader(testset, batch_size=32, shuffle=False, num_workers=6)
     # mean & std of the dataset
     '''
@@ -207,14 +208,16 @@ def main():
             print("\n[epoch %d] test result: accuracy %.2f%% \nmean precision %.2f%% mean recall %.2f%% \nmAP %.2f%% AUC %.4f\n" %
                 (epoch, 100*correct/total, 100*precision, 100*recall, 100*mAP, AUC))
             # log images
-            if opt.log_images:
+            if not opt.no_attention or opt.log_images:
+                # if attention is on, be sure to log images
+                # otherwise depend on log_images
                 print('\nlog images ...\n')
                 I_train = utils.make_grid(images_disp[0], nrow=4, normalize=True, scale_each=True)
                 writer.add_image('train/image', I_train, epoch)
                 if epoch == 0:
                     I_test = utils.make_grid(images_disp[1], nrow=4, normalize=True, scale_each=True)
                     writer.add_image('test/image', I_test, epoch)
-            if opt.log_images and (not opt.no_attention):
+            if not opt.no_attention:
                 print('\nlog attention maps ...\n')
                 # training data
                 __, c1, c2, c3 = model.forward(images_disp[0])

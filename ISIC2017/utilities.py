@@ -99,9 +99,10 @@ def compute_mean_pecision_recall(result_file):
             prob = np.array(list(map(float, row)))
             pred.append(np.argmax(prob))
     # compute precision & recall
-    precision = precision_score(gt, pred, average='macro')
-    recall    = recall_score(gt, pred, average='macro')
-    return precision, recall
+    precision  = precision_score(gt, pred, average='macro')
+    recall     = recall_score(gt, pred, average='macro')
+    recall_mel = recall_score(gt, pred, average='binary', pos_label=1)
+    return precision, recall, recall_mel
 
 def returnCAM(I, feature_conv, weight_softmax, class_idx, im_size, nrow):
     # image
