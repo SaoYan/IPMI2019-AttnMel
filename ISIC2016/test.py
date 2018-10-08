@@ -112,9 +112,9 @@ def main():
                             attn3 = visualize_attn_softmax(I_test, c3, up_factor=4*opt.base_up_factor, nrow=8)
                             writer.add_image('test/attention_map_3', attn3, i)
     mAP, AUC, __ = compute_metrics('test_results.csv')
-    precision, recall = compute_mean_pecision_recall('test_results.csv')
-    print("\ntest result: accuracy %.2f%% \nmean precision %.2f%% mean recall %.2f%% \nmAP %.2f%% AUC %.4f\n" %
-        (100*correct/total, 100*precision, 100*recall, 100*mAP, AUC))
+    precision, recall, recall_mel = compute_mean_pecision_recall('test_results.csv')
+    print("\ntest result: accuracy %.2f%% \nmean precision %.2f%% mean recall %.2f%% \nrecall for mel %.2f%% \nmAP %.2f%% AUC %.4f\n" %
+        (100*correct/total, 100*precision, 100*recall, 100*recall_mel, 100*mAP, AUC))
 
 if __name__ == "__main__":
     if opt.preprocess:
