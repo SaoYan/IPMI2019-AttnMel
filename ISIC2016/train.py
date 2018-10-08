@@ -208,16 +208,14 @@ def main():
             print("\n[epoch %d] test result: accuracy %.2f%% \nmean precision %.2f%% mean recall %.2f%% \nmAP %.2f%% AUC %.4f\n" %
                 (epoch, 100*correct/total, 100*precision, 100*recall, 100*mAP, AUC))
             # log images
-            if not opt.no_attention or opt.log_images:
-                # if attention is on, be sure to log images
-                # otherwise depend on log_images
+            if opt.log_images:
                 print('\nlog images ...\n')
                 I_train = utils.make_grid(images_disp[0], nrow=4, normalize=True, scale_each=True)
                 writer.add_image('train/image', I_train, epoch)
                 if epoch == 0:
                     I_test = utils.make_grid(images_disp[1], nrow=4, normalize=True, scale_each=True)
                     writer.add_image('test/image', I_test, epoch)
-            if not opt.no_attention:
+            if opt.log_images and (not opt.no_attention):
                 print('\nlog attention maps ...\n')
                 # training data
                 __, c1, c2, c3 = model.forward(images_disp[0])
