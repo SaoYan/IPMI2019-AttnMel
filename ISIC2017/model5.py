@@ -1,7 +1,7 @@
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-from blocks import ConvBlock, SelfAttentionBlock
+from blocks import ConvBlock, SelfAttentionBlock, SelfAttentionBlock_chl
 from initialize import *
 
 '''
@@ -24,10 +24,10 @@ class AttnVGG(nn.Module):
         )
         # Projectors & Compatibility functions
         if self.attention:
-            self.attn2 = SelfAttentionBlock(in_features=128, attn_features=64, subsample=True, mode='gaussian')
-            self.attn3 = SelfAttentionBlock(in_features=256, attn_features=128, subsample=True, mode='gaussian')
-            self.attn4 = SelfAttentionBlock(in_features=512, attn_features=256, subsample=True, mode='gaussian')
-            self.attn5 = SelfAttentionBlock(in_features=512, attn_features=256, subsample=True, mode='gaussian')
+            self.attn2 = SelfAttentionBlock(in_features=128, attn_features=64, subsample=True)
+            self.attn3 = SelfAttentionBlock(in_features=256, attn_features=128, subsample=True)
+            self.attn4 = SelfAttentionBlock(in_features=512, attn_features=256, subsample=True)
+            self.attn5 = SelfAttentionBlock(in_features=512, attn_features=256, subsample=True)
         # final classification layer
         self.classify = nn.Linear(in_features=512, out_features=num_classes, bias=True)
         # initialize

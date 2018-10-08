@@ -59,9 +59,9 @@ class AttnResNet(nn.Module):
             layers.append(block(in_features=out_features, out_features=out_features, pre_act=self.pre_act, first_stage=False,
                             stride=1, factor=factor, normalize_attn=self.normalize_attn))
             if (num_blocks%2 == 0) and (self.attention) and (i == num_blocks//2-1): # one extra attention block in the 2nd and 3rd stage
-                layers.append(SelfAttentionBlock(in_features=out_features, attn_features=out_features//2, subsample=True, mode='gaussian'))
+                layers.append(SelfAttentionBlock(in_features=out_features, attn_features=out_features//2, subsample=True))
         if self.attention:
-            layers.append(SelfAttentionBlock(in_features=out_features, attn_features=out_features//2, subsample=True, mode='gaussian'))
+            layers.append(SelfAttentionBlock(in_features=out_features, attn_features=out_features//2, subsample=True))
         return nn.Sequential(*layers)
     def forward(self, x):
         pre = self.pre_conv(x)       # /4
