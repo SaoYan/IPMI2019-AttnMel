@@ -87,3 +87,40 @@ class SelfAttentionBlock(nn.Module):
         y = y.permute(0,2,1).contiguous().view(N,self.attn_features,Wx,Hx)
         z = self.W(y)
         return z + x
+
+'''
+Channel-wise self attention
+'''
+class SelfAttentionBlock_chl(nn.Module):
+    def __init__(self, in_features, attn_features, subsample=True):
+        super(SelfAttentionBlock_chl, self).__init__()
+        self.in_features = in_features
+        self.attn_features = attn_features
+        self.subsample = subsample
+        self.phi = None
+        if subsample:
+            self.phi = nn.Conv2d(in_channels=in_features, out_channels=attn_features, kernel_size=1, padding=0, bias=True)
+            self.g = nn.Conv2d(in_channels=in_features, out_channels=attn_features, kernel_size=1, padding=0, bias=True)
+        self.theta = nn.MaxPool2d(kernel_size=2, stride=2)
+        if self.phi is not None:
+            self.phi = nn.Sequential(
+                self.phi,
+                nn.MaxPool2d(kernel_size=2, stride=2)
+            )
+        else:
+            self.phi = nn.MaxPool2d(kernel_size=2, stride=2)
+    def forward(self, x):
+        N, __, Wx, Hx = x.size()
+        if self.subsample:
+            g_x = self.g(x).view(N,self.attn_features,-1) # N x C' x WH
+        else:
+            g_x = x.view(N,self.in_features,-1) # N x C x WH
+        theta_x = self.theta(x).view(N,self.in_features,-1) # N x C x W'H'
+        if self.subsample:
+            phi_x = self.phi(x).view(N,self.attn_features,-1).permute(0,2,1) # N x W'H' x C'
+        else:
+            phi_x = self.phi(x).view(N,self.in_features,-1).permute(0,2,1) # N x W'H' x C
+        c = torch.bmm(theta_x, phi_x) # N x C x C or N x C x C'
+        y = torch.bmm(F.softmax(c,dim=-1), g_x) # N x C x WH
+        z = y.contiguous().view(N,self.in_features,Wx,Hx)
+        return z + x

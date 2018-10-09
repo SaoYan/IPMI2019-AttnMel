@@ -1,7 +1,7 @@
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-from blocks import ConvBlock, SelfAttentionBlock, SelfAttentionBlock_chl
+from blocks import ConvBlock, SelfAttentionBlock
 from initialize import *
 
 '''
