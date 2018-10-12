@@ -9,8 +9,8 @@ import torch.nn.functional as F
 import torchvision
 import torchvision.utils as utils
 import torchvision.transforms as transforms
-from model5 import AttnVGG
-from model6 import AttnResNet
+from model1 import AttnVGG
+from model2 import AttnResNet
 from utilities import *
 from data import preprocess_data, ISIC2016
 
@@ -37,12 +37,13 @@ def main():
 
     # load data
     print('\nloading the dataset ...\n')
-    im_size = 256
+    im_size = 224
     transform_test = transforms.Compose([
-        transforms.Resize((300,300)),
+        transforms.Resize((256,256)),
         transforms.CenterCrop(im_size),
         transforms.ToTensor(),
-        transforms.Normalize((0.6990, 0.5478, 0.4831), (0.0945, 0.1330, 0.1516))
+        # transforms.Normalize((0.6990, 0.5478, 0.4831), (0.0945, 0.1330, 0.1516))
+        transforms.Normalize((0.7105, 0.5646, 0.4978), (0.0911, 0.1309, 0.1513))
     ])
     testset = ISIC2016(csv_file='test.csv', shuffle=False, rotate=False, transform=transform_test)
     testloader = torch.utils.data.DataLoader(testset, batch_size=64, shuffle=False, num_workers=6)
@@ -58,11 +59,10 @@ def main():
     if opt.model == 'VGGNet':
         print('\nbase model: VGGNet ...\n')
         net = AttnVGG(num_classes=2, attention=not opt.no_attention, normalize_attn=True)
-        net._modules.get('feature')._modules.get('0').register_forward_hook(hook_feature)
     elif opt.model == 'ResNet':
         print('\nbase model: ResNet ...\n')
         net = AttnResNet(num_classes=2, attention=not opt.no_attention, normalize_attn=True)
-        net._modules.get('feature')._modules.get('1').register_forward_hook(hook_feature)
+        net._modules.get('layer4').register_forward_hook(hook_feature)
     else:
         raise NotImplementedError("Invalid base model name!")
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -97,8 +97,8 @@ def main():
                     I_test = utils.make_grid(images_test, nrow=8, normalize=True, scale_each=True)
                     writer.add_image('test/image', I_test, i)
                     # class activation map
-                    params = list(model.parameters())
-                    cam = returnCAM(I_test, feature_conv=features_blobs, weight_softmax=params[-2].cpu().numpy(), class_idx=1, im_size=im_size, nrow=8)
+                    params = model.state_dict()['module.classify.weight']
+                    cam = returnCAM(I_test, feature_conv=features_blobs, weight_softmax=params.cpu().numpy(), class_idx=1, im_size=im_size, nrow=8)
                     writer.add_image('test/CAM', cam, i)
                     if not opt.no_attention:
                         __, c1, c2, c3 = model.forward(images_test)
