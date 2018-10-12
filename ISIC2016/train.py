@@ -11,8 +11,8 @@ import torch.optim.lr_scheduler as lr_scheduler
 import torchvision
 import torchvision.utils as utils
 import torchvision.transforms as transforms
-from model5 import AttnVGG
-from model6 import AttnResNet
+from model1 import AttnVGG
+from model2 import AttnResNet
 from loss import FocalLoss
 from data import preprocess_data, ISIC2016
 from utilities import *
@@ -25,8 +25,8 @@ parser = argparse.ArgumentParser(description="Attn-Skin-Lesion")
 parser.add_argument("--preprocess", type=bool, default=False, help="whether to run preprocess_data")
 
 parser.add_argument("--batch_size", type=int, default=32, help="batch size")
-parser.add_argument("--epochs", type=int, default=200, help="number of epochs")
-parser.add_argument("--lr", type=float, default=0.01, help="initial learning rate")
+parser.add_argument("--epochs", type=int, default=50, help="number of epochs")
+parser.add_argument("--lr", type=float, default=0.001, help="initial learning rate")
 parser.add_argument("--outf", type=str, default="logs", help='path of log files')
 parser.add_argument("--base_up_factor", type=int, default=8, help="number of epochs")
 
@@ -51,20 +51,22 @@ def main():
         print('\nno offline oversampling ...\n')
         num_aug = 10
         train_file = 'train.csv'
-    im_size = 256
+    im_size = 224
     transform_train = transforms.Compose([
-        transforms.Resize((300,300)),
+        transforms.Resize((256,256)),
         transforms.RandomCrop(im_size),
         transforms.RandomVerticalFlip(),
         transforms.RandomHorizontalFlip(),
         transforms.ToTensor(),
-        transforms.Normalize((0.6990, 0.5478, 0.4831), (0.0945, 0.1330, 0.1516))
+        # transforms.Normalize((0.6990, 0.5478, 0.4831), (0.0945, 0.1330, 0.1516))
+        transforms.Normalize((0.7105, 0.5646, 0.4978), (0.0911, 0.1309, 0.1513))
     ])
     transform_test = transforms.Compose([
-        transforms.Resize((300,300)),
+        transforms.Resize((256,256)),
         transforms.CenterCrop(im_size),
         transforms.ToTensor(),
-        transforms.Normalize((0.6990, 0.5478, 0.4831), (0.0945, 0.1330, 0.1516))
+        # transforms.Normalize((0.6990, 0.5478, 0.4831), (0.0945, 0.1330, 0.1516))
+        transforms.Normalize((0.7105, 0.5646, 0.4978), (0.0911, 0.1309, 0.1513))
     ])
     trainset = ISIC2016(csv_file=train_file, shuffle=True, transform=transform_train)
     trainloader = torch.utils.data.DataLoader(trainset, batch_size=opt.batch_size, shuffle=True, num_workers=6)
@@ -122,7 +124,7 @@ def main():
 
     # optimizer
     optimizer = optim.SGD(model.parameters(), lr=opt.lr, momentum=0.9, weight_decay=5e-4)
-    lr_lambda = lambda epoch : np.power(0.5, int(epoch/25))
+    lr_lambda = lambda epoch : np.power(0.8, epoch)
     scheduler = lr_scheduler.LambdaLR(optimizer, lr_lambda=lr_lambda)
 
     # training
@@ -145,7 +147,6 @@ def main():
                 model.zero_grad()
                 optimizer.zero_grad()
                 inputs, labels = data
-                # inputs = (inputs - Mean.view(1,3,1,1)) / Std.view(1,3,1,1)
                 inputs, labels = inputs.to(device), labels.to(device)
                 if (aug == 0) and (i == 0): # archive images in order to save to logs
                     images_disp.append(inputs[0:16,:,:,:])
@@ -184,7 +185,6 @@ def main():
                 csv_writer = csv.writer(csv_file, delimiter=',')
                 for i, data in enumerate(testloader, 0):
                     images_test, labels_test = data
-                    # images_test = (images_test - Mean.view(1,3,1,1)) / Std.view(1,3,1,1)
                     images_test, labels_test = images_test.to(device), labels_test.to(device)
                     if i == 0: # archive images in order to save to logs
                         images_disp.append(images_test[0:16,:,:,:])
@@ -197,16 +197,17 @@ def main():
                     responses = [responses[i] for i in range(responses.shape[0])]
                     csv_writer.writerows(responses)
             # log scalars
-            precision, recall, __ = compute_mean_pecision_recall('test_results.csv')
+            precision, recall, recall_mel = compute_mean_pecision_recall('test_results.csv')
             mAP, AUC, ROC = compute_metrics('test_results.csv')
             writer.add_scalar('test/accuracy', correct/total, epoch)
             writer.add_scalar('test/mean_precision', precision, epoch)
-            writer.add_scalar('test/mean_recall', recall, epoch)
+            writer.add_scalar('test/mean_recall', recall_mel, epoch)
+            writer.add_scalar('test/recall', recall, epoch)
             writer.add_scalar('test/mAP', mAP, epoch)
             writer.add_scalar('test/AUC', AUC, epoch)
             writer.add_image('curve/ROC', ROC, epoch)
-            print("\n[epoch %d] test result: accuracy %.2f%% \nmean precision %.2f%% mean recall %.2f%% \nmAP %.2f%% AUC %.4f\n" %
-                (epoch, 100*correct/total, 100*precision, 100*recall, 100*mAP, AUC))
+            print("\n[epoch %d] test result: accuracy %.2f%% \nmean precision %.2f%% mean recall %.2f%% recall for mel %.2f%% \nmAP %.2f%% AUC %.4f\n" %
+                (epoch, 100*correct/total, 100*precision, 100*recall, 100*recall_mel, 100*mAP, AUC))
             # log images
             if opt.log_images:
                 print('\nlog images ...\n')
