@@ -192,6 +192,23 @@ class LinearAttentionBlock(nn.Module):
         g = torch.mul(a.expand_as(l), l).view(N,C,-1).sum(dim=2) # batch_sizexC
         return c.view(N,1,W,H), g
 
+class NonLinearAttentionBlock(nn.Module):
+    def __init__(self, in_features_l, in_features_g, attn_features, normalize_attn=True):
+        super(NonLinearAttentionBlock, self).__init__()
+        self.normalize_attn = normalize_attn
+        self.W_l = nn.Conv2d(in_channels=in_features_l, out_channels=attn_features, kernel_size=1, padding=0, bias=False)
+        self.W_g = nn.Conv2d(in_channels=in_features_g, out_channels=attn_features, kernel_size=1, padding=0, bias=True)
+        self.phi = nn.Conv2d(in_channels=attn_features, out_channels=1, kernel_size=1, padding=0, bias=True)
+    def forward(self, l, g):
+        N, C, W, H = l.size()
+        c = self.phi( F.relu(self.W_l(l) + self.W_g(g)))
+        if self.normalize_attn:
+            a = F.softmax(c.view(N,1,-1), dim=2).view(N,1,W,H)
+        else:
+            a = F.sigmoid(c)
+        g = torch.mul(a.expand_as(l), l).view(N,C,-1).sum(dim=2) # batch_sizexC
+        return c.view(N,1,W,H), g
+
 '''
 Grid attention block
 
@@ -208,7 +225,7 @@ class GridAttentionBlock(nn.Module):
         self.normalize_attn = normalize_attn
         self.output_transform = output_transform
         self.W_l = nn.Conv2d(in_channels=in_features_l, out_channels=attn_features, kernel_size=1, padding=0, bias=False)
-        self.W_g = nn.Conv2d(in_channels=in_features_g, out_channels=attn_features, kernel_size=1, padding=0, bias=False)
+        self.W_g = nn.Conv2d(in_channels=in_features_g, out_channels=attn_features, kernel_size=1, padding=0, bias=True)
         self.phi = nn.Conv2d(in_channels=attn_features, out_channels=1, kernel_size=1, padding=0, bias=True)
         if self.output_transform:
             self.trans = nn.Sequential(

@@ -11,8 +11,8 @@ import torch.optim.lr_scheduler as lr_scheduler
 import torchvision
 import torchvision.utils as utils
 import torchvision.transforms as transforms
-from model1 import AttnVGG
-from model2 import AttnResNet
+from model_vgg_2 import AttnVGG
+from model_res_1 import AttnResNet
 from loss import FocalLoss
 from data import preprocess_data, ISIC2016
 from utilities import *
@@ -124,7 +124,7 @@ def main():
 
     # optimizer
     optimizer = optim.SGD(model.parameters(), lr=opt.lr, momentum=0.9, weight_decay=5e-4)
-    lr_lambda = lambda epoch : np.power(0.8, epoch)
+    lr_lambda = lambda epoch : np.power(0.1, epoch//10)
     scheduler = lr_scheduler.LambdaLR(optimizer, lr_lambda=lr_lambda)
 
     # training
