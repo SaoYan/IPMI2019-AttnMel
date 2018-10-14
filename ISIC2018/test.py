@@ -36,12 +36,12 @@ opt = parser.parse_args()
 def main():
     # load data
     print('\nloading the dataset ...\n')
-    im_size = 256
+    im_size = 224
     transform_test = transforms.Compose([
-        transforms.Resize(300),
+        transforms.Resize((256,256)),
         transforms.CenterCrop(im_size),
         transforms.ToTensor(),
-        transforms.Normalize((0.7540,0.5188,0.5392), (0.0917, 0.1256, 0.1408))
+        transforms.Normalize((0.7560,0.5222,0.5431), (0.0909, 0.1248, 0.1401))
     ])
     testset = ISIC2018(csv_file='test.csv', shuffle=False, rotate=False, transform=transform_test)
     testloader = torch.utils.data.DataLoader(testset, batch_size=64, shuffle=False, num_workers=6)
@@ -99,7 +99,7 @@ def main():
                             attn3 = visualize_attn_softmax(I_test, c3, up_factor=4*opt.base_up_factor, nrow=4)
                             writer.add_image('test/attention_map_3', attn3, i)
     precision, recall = compute_mean_pecision_recall('test_results.csv')
-    print("\navg_precision %.2f%% avg_recall %.2f%%\n" % (100*precision, 100*recall))
+    print("\navg_precision %.2f%% avg_recall %.2f%%\n" % (100*np.mean(precision), 100*np.mean(recall)))
 
 if __name__ == "__main__":
     if opt.preprocess:

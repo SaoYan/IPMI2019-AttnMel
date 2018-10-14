@@ -11,8 +11,8 @@ import torch.optim.lr_scheduler as lr_scheduler
 import torchvision
 import torchvision.utils as utils
 import torchvision.transforms as transforms
-from model5 import AttnVGG
-from model6 import AttnResNet
+from model_vgg_2 import AttnVGG
+from model_res_1 import AttnResNet
 from loss import FocalLoss
 from data import preprocess_data, ISIC2018
 from utilities import *
@@ -24,8 +24,8 @@ parser = argparse.ArgumentParser(description="Attn-Skin-Lesion")
 
 parser.add_argument("--preprocess", type=bool, default=False, help="whether to run preprocess_data")
 parser.add_argument("--batch_size", type=int, default=32, help="batch size")
-parser.add_argument("--epochs", type=int, default=200, help="number of epochs")
-parser.add_argument("--lr", type=float, default=0.01, help="initial learning rate")
+parser.add_argument("--epochs", type=int, default=50, help="number of epochs")
+parser.add_argument("--lr", type=float, default=0.001, help="initial learning rate")
 parser.add_argument("--outf", type=str, default="logs", help='path of log files')
 parser.add_argument("--base_up_factor", type=int, default=8, help="number of epochs")
 
@@ -48,22 +48,22 @@ def main():
         train_file = 'train_oversample.csv'
     else:
         print('\nno offline oversampled ...\n')
-        num_aug = 3
+        num_aug = 1
         train_file = 'train.csv'
-    im_size = 256
+    im_size = 224
     transform_train = transforms.Compose([
-        transforms.Resize((300,300)),
+        transforms.Resize((256,256)),
         transforms.RandomCrop(im_size),
         transforms.RandomVerticalFlip(),
         transforms.RandomHorizontalFlip(),
         transforms.ToTensor(),
-        transforms.Normalize((0.7540,0.5188,0.5392), (0.0917, 0.1255, 0.1408))
+        transforms.Normalize((0.7560,0.5222,0.5431), (0.0909, 0.1248, 0.1401))
     ])
     transform_test = transforms.Compose([
-        transforms.Resize((300,300)),
+        transforms.Resize((256,256)),
         transforms.CenterCrop(im_size),
         transforms.ToTensor(),
-        transforms.Normalize((0.7540,0.5188,0.5392), (0.0917, 0.1255, 0.1408))
+        transforms.Normalize((0.7560,0.5222,0.5431), (0.0909, 0.1248, 0.1401))
     ])
     trainset = ISIC2018(csv_file=train_file, shuffle=True, transform=transform_train)
     trainloader = torch.utils.data.DataLoader(trainset, batch_size=opt.batch_size, shuffle=True, num_workers=6)
@@ -82,6 +82,7 @@ def main():
     Std /= len(trainset)
     print('mean: '), print(Mean.numpy())
     print('std: '), print(Std.numpy())
+    return
     '''
     print('done')
 
@@ -120,7 +121,7 @@ def main():
 
     # optimizer
     optimizer = optim.SGD(model.parameters(), lr=opt.lr, momentum=0.9, weight_decay=5e-4)
-    lr_lambda = lambda epoch : np.power(0.5, int(epoch/25))
+    lr_lambda = lambda epoch : np.power(0.1, epoch//10)
     scheduler = lr_scheduler.LambdaLR(optimizer, lr_lambda=lr_lambda)
     print('done')
 
@@ -194,12 +195,14 @@ def main():
                     responses = [responses[i] for i in range(responses.shape[0])]
                     csv_writer.writerows(responses)
             # log scalars
-            precision, recall, __ = compute_mean_pecision_recall('test_results.csv')
+            precision, recall = compute_mean_pecision_recall('test_results.csv')
             writer.add_scalar('test/accuracy', correct/total, epoch)
-            writer.add_scalar('test/mean_precision', precision, epoch)
-            writer.add_scalar('test/mean_recall', recall, epoch)
+            writer.add_scalar('test/mean_precision', np.mean(precision), epoch)
+            writer.add_scalar('test/mean_recall', np.mean(recall), epoch)
+            print(precision)
+            print(recall)
             print("\n[epoch %d] test result: accuracy %.2f%% \navg_precision %.2f%% avg_recall %.2f%%\n" %
-                (epoch, 100*correct/total, 100*precision, 100*recall))
+                (epoch, 100*correct/total, 100*np.mean(precision), 100*np.mean(recall)))
             # log images
             if opt.log_images:
                 print('\nlog images ...\n')
@@ -235,5 +238,5 @@ def main():
 
 if __name__ == "__main__":
     if opt.preprocess:
-        preprocess_data(root_dir='data')
+        preprocess_data(root_dir='../data_2018')
     main()
