@@ -123,7 +123,6 @@ def main():
     optimizer = optim.SGD(model.parameters(), lr=opt.lr, momentum=0.9, weight_decay=5e-4)
     lr_lambda = lambda epoch : np.power(0.1, epoch//10)
     scheduler = lr_scheduler.LambdaLR(optimizer, lr_lambda=lr_lambda)
-    print('done')
 
     # training
     print('\nstart training ...\n')
