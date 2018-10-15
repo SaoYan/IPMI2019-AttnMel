@@ -55,9 +55,8 @@ class AttnVGG(nn.Module):
         N, __, __, __ = block5.size()
         g = self.dense(block5.view(N,-1))
         if self.attention:
-            g_proj = g.view(N,512,1,1)
-            c1, g1 = self.attn1(block4, g_proj)
-            c2, g2 = self.attn2(block5, g_proj)
+            c1, g1 = self.attn1(block4, g.view(N,512,1,1))
+            c2, g2 = self.attn2(block5, g.view(N,512,1,1))
             g_hat = torch.cat((g,g1,g2), dim=1) # batch_size x C
             out = self.classify(g_hat)
         else:

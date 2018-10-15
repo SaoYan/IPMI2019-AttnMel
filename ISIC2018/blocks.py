@@ -225,7 +225,7 @@ class GridAttentionBlock(nn.Module):
         self.normalize_attn = normalize_attn
         self.output_transform = output_transform
         self.W_l = nn.Conv2d(in_channels=in_features_l, out_channels=attn_features, kernel_size=1, padding=0, bias=False)
-        self.W_g = nn.Conv2d(in_channels=in_features_g, out_channels=attn_features, kernel_size=1, padding=0, bias=False)
+        self.W_g = nn.Conv2d(in_channels=in_features_g, out_channels=attn_features, kernel_size=1, padding=0, bias=True)
         self.phi = nn.Conv2d(in_channels=attn_features, out_channels=1, kernel_size=1, padding=0, bias=True)
         if self.output_transform:
             self.trans = nn.Sequential(
@@ -234,9 +234,9 @@ class GridAttentionBlock(nn.Module):
             )
     def forward(self, l, g):
         N, C, W, H = l.size()
-        g = self.W_g(g)
-        up_g = F.interpolate(g, scale_factor=self.up_factor, mode='bilinear')
-        c = self.phi(F.relu(self.W_l(l) + up_g)) # batch_sizex1xWxH
+        l_ = self.W_l(l)
+        g_ = F.interpolate(self.W_g(g), scale_factor=self.up_factor, mode='bilinear', align_corners=False)
+        c = self.phi(F.relu(l_ + g_)) # batch_sizex1xWxH
         # compute attn map
         if self.normalize_attn:
             a = F.softmax(c.view(N,1,-1), dim=2).view(N,1,W,H)

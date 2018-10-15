@@ -35,7 +35,7 @@ def visualize_attn_sigmoid(I, c, up_factor, nrow):
     # image
     img = I.permute((1,2,0)).cpu().numpy()
     # compute the heatmap
-    a = F.sigmoid(c)
+    a = torch.sigmoid(c)
     if up_factor > 1:
         a = F.interpolate(a, scale_factor=up_factor, mode='bilinear', align_corners=False)
     attn = utils.make_grid(a, nrow=nrow, normalize=False)
