@@ -131,7 +131,7 @@ def main():
     running_avg_accuracy = 0
     writer = SummaryWriter(opt.outf)
     for epoch in range(opt.epochs):
-        images_test_disp = []
+        images_disp = []
         # adjust learning rate
         scheduler.step()
         current_lr = optimizer.param_groups[0]['lr']
@@ -147,7 +147,7 @@ def main():
                 inputs, labels = data
                 inputs, labels = inputs.to(device), labels.to(device)
                 if (aug == 0) and (i == 0): # archive images in order to save to logs
-                    images_test_disp.append(inputs[0:16,:,:,:])
+                    images_disp.append(inputs[0:16,:,:,:])
                 # forward
                 pred, __, __, __ = model.forward(inputs)
                 # backward
@@ -185,7 +185,7 @@ def main():
                     images_test, labels_test = data
                     images_test, labels_test = images_test.to(device), labels_test.to(device)
                     if i == 0: # archive images in order to save to logs
-                        images_test_disp.append(images_test[0:16,:,:,:])
+                        images_disp.append(images_test[0:16,:,:,:])
                     pred_test, __, __, __ = model.forward(images_test)
                     predict = torch.argmax(pred_test, 1)
                     total += labels_test.size(0)

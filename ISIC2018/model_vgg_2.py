@@ -24,7 +24,7 @@ class AttnVGG(nn.Module):
             self.dense = nn.Linear(in_features=512*7*7, out_features=512, bias=True)
             self.attn1 = LinearAttentionBlock(512, normalize_attn=normalize_attn)
             self.attn2 = LinearAttentionBlock(512, normalize_attn=normalize_attn)
-            self.classify = nn.Linear(in_features=1024, out_features=num_classes, bias=True)
+            self.classify = nn.Linear(in_features=512*3, out_features=num_classes, bias=True)
         else:
             self.dense = nn.Sequential(*list(net.classifier.children())[:-1])
             self.classify = nn.Linear(in_features=4096, out_features=num_classes, bias=True)
@@ -58,7 +58,7 @@ class AttnVGG(nn.Module):
             g_proj = g.view(N,512,1,1)
             c1, g1 = self.attn1(block4, g_proj)
             c2, g2 = self.attn2(block5, g_proj)
-            g_hat = torch.cat((g1,g2), dim=1) # batch_size x C
+            g_hat = torch.cat((g,g1,g2), dim=1) # batch_size x C
             out = self.classify(g_hat)
         else:
             out = self.classify(g)
