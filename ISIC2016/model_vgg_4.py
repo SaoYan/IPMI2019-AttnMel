@@ -8,7 +8,7 @@ import torchvision.models as models
 vgg
 pretrain
 grid attention
-global feature: pool
+global feature: dense
 '''
 
 class AttnVGG(nn.Module):
@@ -22,7 +22,7 @@ class AttnVGG(nn.Module):
         self.conv_block4 = nn.Sequential(*list(net.features.children())[24:33])
         self.conv_block5 = nn.Sequential(*list(net.features.children())[34:43])
         if self.attention:
-            self.pool = nn.AvgPool2d(14, stride=1)
+            self.dense = nn.Linear(in_features=512*7*7, out_features=512, bias=True)
             self.attn1 = GridAttentionBlock(256, 512, 256, 4, normalize_attn=normalize_attn)
             self.attn2 = GridAttentionBlock(512, 512, 256, 2, normalize_attn=normalize_attn)
             self.classify = nn.Linear(in_features=512+512+256, out_features=num_classes, bias=True)
@@ -32,6 +32,7 @@ class AttnVGG(nn.Module):
         # initialize
         self.reset_parameters(self.classify)
         if self.attention:
+            self.reset_parameters(self.dense)
             self.reset_parameters(self.attn1)
             self.reset_parameters(self.attn2)
     def reset_parameters(self, module):
@@ -56,11 +57,12 @@ class AttnVGG(nn.Module):
         block4 = self.conv_block4(pool3)   # /8
         pool4 = F.max_pool2d(block4, 2, 2) # /16
         block5 = self.conv_block5(pool4)   # /16
-        N, __, __, __ = block5.size()
+        pool5 = F.max_pool2d(block5, 2, 2) # /32
+        N, __, __, __ = pool5.size()
         if self.attention:
-            g = self.pool(block5).view(N,512)
-            c1, g1 = self.attn1(block3, block5)
-            c2, g2 = self.attn2(block4, block5)
+            g = self.dense(pool5.view(N,-1))
+            c1, g1 = self.attn1(pool3, pool5)
+            c2, g2 = self.attn2(pool4, pool5)
             g_hat = torch.cat((g,g1,g2), dim=1) # batch_size x C
             out = self.classify(g_hat)
         else:

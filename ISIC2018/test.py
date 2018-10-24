@@ -11,7 +11,7 @@ import torchvision.utils as utils
 import torchvision.transforms as transforms
 from model5 import AttnVGG
 from model6 import AttnResNet
-from utilities import *
+from utilities_ import *
 from data import preprocess_data, ISIC2018
 
 import matplotlib

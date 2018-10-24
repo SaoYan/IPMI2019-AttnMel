@@ -15,7 +15,7 @@ from model_vgg_2 import AttnVGG
 from model_res_1 import AttnResNet
 from loss import FocalLoss
 from data import preprocess_data, ISIC2018
-from utilities import *
+from utilities_ import *
 
 os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"
 os.environ["CUDA_VISIBLE_DEVICES"] = "0,1"
