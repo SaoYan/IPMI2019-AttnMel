@@ -26,9 +26,7 @@ def visualize_attn_softmax(I, c, up_factor, nrow):
     attn = cv2.cvtColor(attn, cv2.COLOR_BGR2RGB)
     attn = np.float32(attn) / 255
     # add the heatmap to the image
-    vis = img + attn
-    min_val, max_val = np.min(vis), np.max(vis)
-    vis = (vis - min_val) / (max_val - min_val)
+    vis = 0.7 * img + 0.3 * attn
     return torch.from_numpy(vis).permute(2,0,1)
 
 def visualize_attn_sigmoid(I, c, up_factor, nrow):
@@ -44,9 +42,7 @@ def visualize_attn_sigmoid(I, c, up_factor, nrow):
     attn = cv2.cvtColor(attn, cv2.COLOR_BGR2RGB)
     attn = np.float32(attn) / 255
     # add the heatmap to the image
-    vis = img + attn
-    min_val, max_val = np.min(vis), np.max(vis)
-    vis = (vis - min_val) / (max_val - min_val)
+    vis = 0.7 * img + 0.3 * attn
     return torch.from_numpy(vis).permute(2,0,1)
 
 def compute_metrics(result_file):
