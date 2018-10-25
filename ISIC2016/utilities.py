@@ -36,7 +36,7 @@ def visualize_attn_sigmoid(I, c, up_factor, nrow):
     a = torch.sigmoid(c)
     if up_factor > 1:
         a = F.interpolate(a, scale_factor=up_factor, mode='bilinear', align_corners=False)
-    attn = utils.make_grid(a, nrow=nrow, normalize=False)
+    attn = utils.make_grid(a, nrow=nrow, normalize=True, scale_each=True)
     attn = attn.permute((1,2,0)).mul(255).byte().cpu().numpy()
     attn = cv2.applyColorMap(attn, cv2.COLORMAP_JET)
     attn = cv2.cvtColor(attn, cv2.COLOR_BGR2RGB)

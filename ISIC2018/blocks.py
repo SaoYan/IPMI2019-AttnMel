@@ -150,7 +150,7 @@ class ResNetBottleneckBlock_CBAM(nn.Module):
             conv1 = self.conv1(pre)
             conv2 = self.conv2(F.relu(self.bn2(conv1), inplace=True))
             conv3 = self.conv3(F.relu(self.bn3(conv2), inplace=True))
-            cbam = self.cbam(conv3)
+            __, cbam = self.cbam(conv3)
             out = cbam + shortcut
         else:
             conv1 = F.relu(self.bn1(self.conv1(x)), inplace=True)
@@ -219,23 +219,19 @@ Reference code
 https://github.com/DadianisBidza/LearnToPayAttention-Keras
 '''
 class GridAttentionBlock(nn.Module):
-    def __init__(self, in_features_l, in_features_g, attn_features, up_factor, normalize_attn=True, output_transform=False):
+    def __init__(self, in_features_l, in_features_g, attn_features, up_factor, normalize_attn=True):
         super(GridAttentionBlock, self).__init__()
         self.up_factor = up_factor
         self.normalize_attn = normalize_attn
-        self.output_transform = output_transform
         self.W_l = nn.Conv2d(in_channels=in_features_l, out_channels=attn_features, kernel_size=1, padding=0, bias=False)
-        self.W_g = nn.Conv2d(in_channels=in_features_g, out_channels=attn_features, kernel_size=1, padding=0, bias=True)
+        self.W_g = nn.Conv2d(in_channels=in_features_g, out_channels=attn_features, kernel_size=1, padding=0, bias=False)
         self.phi = nn.Conv2d(in_channels=attn_features, out_channels=1, kernel_size=1, padding=0, bias=True)
-        if self.output_transform:
-            self.trans = nn.Sequential(
-                nn.Conv2d(in_channels=in_features_l, out_channels=in_features_l, kernel_size=1, stride=1, padding=0, bias=False),
-                nn.BatchNorm2d(in_features_l)
-            )
     def forward(self, l, g):
         N, C, W, H = l.size()
         l_ = self.W_l(l)
-        g_ = F.interpolate(self.W_g(g), scale_factor=self.up_factor, mode='bilinear', align_corners=False)
+        g_ = self.W_g(g)
+        if self.up_factor > 1:
+            g_ = F.interpolate(g_, scale_factor=self.up_factor, mode='bilinear', align_corners=False)
         c = self.phi(F.relu(l_ + g_)) # batch_sizex1xWxH
         # compute attn map
         if self.normalize_attn:
@@ -244,9 +240,11 @@ class GridAttentionBlock(nn.Module):
             a = torch.sigmoid(c)
         # re-weight the local feature
         f = torch.mul(a.expand_as(l), l) # batch_sizexCxWxH
-        if self.output_transform:
-            f = self.trans(f)
-        return c.view(N,1,W,H), f.view(N,C,-1).sum(dim=2)
+        if self.normalize_attn:
+            output = f.view(N,C,-1).sum(dim=2) # weighted sum
+        else:
+            output = F.adaptive_avg_pool2d(f, (1,1)).view(N,C)
+        return c.view(N,1,W,H), output
 
 '''
 Self attention
@@ -301,9 +299,10 @@ https://github.com/kobiso/CBAM-keras
 '''
 class CBAMAttentionBlock(nn.Module):
     # Convolutional Block Attention Module https://arxiv.org/abs/1807.06521
-    def __init__(self, in_features, reduction=16, normalize_attn=False):
+    def __init__(self, in_features, reduction=16, normalize_attn=False, out_pool=False):
         super(CBAMAttentionBlock, self).__init__()
         self.normalize_attn = normalize_attn
+        self.out_pool = out_pool
         # channel attention
         self.avg_pool = nn.AdaptiveAvgPool2d(output_size=(1,1))
         self.max_pool = nn.AdaptiveMaxPool2d(output_size=(1,1))
@@ -315,6 +314,7 @@ class CBAMAttentionBlock(nn.Module):
         # spatial attention
         self.conv = nn.Conv2d(in_channels=2, out_channels=1, kernel_size=7, stride=1, padding=3, bias=False)
     def forward(self, x):
+        N, C, __, __ = x.size()
         # channel attention
         avg_pool = self.mlp(self.avg_pool(x)) # N x C x 1 x 1
         max_pool = self.mlp(self.max_pool(x)) # N x C x 1 x 1
@@ -332,4 +332,7 @@ class CBAMAttentionBlock(nn.Module):
             spatial_attn = F.softmax(c.view(N,C,-1), dim=2).view(N,C,W,H)
         else:
             spatial_attn = torch.sigmoid(c)
-        return x_channel_attn.mul(spatial_attn)
+        output = x_channel_attn.mul(spatial_attn)
+        if self.out_pool:
+            output = F.adaptive_avg_pool2d(output, (1,1)).view(N,C)
+        return c, output
