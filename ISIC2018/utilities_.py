@@ -27,7 +27,7 @@ def visualize_attn_softmax(I, c, up_factor, nrow):
     attn = np.float32(attn) / 255
     # add the heatmap to the image
     vis = 0.7 * img + 0.3 * attn
-    return torch.from_numpy(vis).permute(2,0,1)
+    return torch.from_numpy(vis).permute(2,0,1), [torch.max(a).item(),torch.min(a).item(),torch.mean(a).item()]
 
 def visualize_attn_sigmoid(I, c, up_factor, nrow):
     # image
@@ -43,7 +43,7 @@ def visualize_attn_sigmoid(I, c, up_factor, nrow):
     attn = np.float32(attn) / 255
     # add the heatmap to the image
     vis = 0.7 * img + 0.3 * attn
-    return torch.from_numpy(vis).permute(2,0,1)
+    return torch.from_numpy(vis).permute(2,0,1), [torch.max(a).item(),torch.min(a).item(),torch.mean(a).item()]
 
 def compute_mean_pecision_recall(result_file):
     # groundtruth

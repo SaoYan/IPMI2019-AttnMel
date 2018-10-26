@@ -37,7 +37,7 @@ class AttnVGG(nn.Module):
     def reset_parameters(self, module):
         for m in module.modules():
             if isinstance(m, nn.Conv2d):
-                nn.init.kaiming_normal_(m.weight, mode='fan_out', nonlinearity='relu')
+                nn.init.kaiming_normal_(m.weight, a=0, mode='fan_in', nonlinearity='relu')
                 if m.bias is not None:
                     nn.init.constant_(m.bias, 0.)
             elif isinstance(m, nn.BatchNorm2d):
@@ -64,7 +64,8 @@ class AttnVGG(nn.Module):
             g_hat = torch.cat((g,g1,g2), dim=1) # batch_size x C
             out = self.classify(g_hat)
         else:
-            g = self.dense(block5.view(N,-1))
+            pool5 = F.max_pool2d(block5, 2, 2) # /32
+            g = self.dense(pool5.view(N,-1))
             out = self.classify(g)
             c1, c2 = None, None
         return [out, c1, c2, None]

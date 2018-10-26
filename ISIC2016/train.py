@@ -11,7 +11,7 @@ import torch.optim.lr_scheduler as lr_scheduler
 import torchvision
 import torchvision.utils as utils
 import torchvision.transforms as transforms
-from model_vgg_2 import AttnVGG
+from model_vgg_grid_cbam import AttnVGG
 from model_res_1 import AttnResNet
 from loss import FocalLoss
 from data import preprocess_data, ISIC2016
@@ -99,7 +99,7 @@ def main():
 
     if opt.model == 'VGGNet':
         print('\nbase model: VGGNet ...\n')
-        net = AttnVGG(num_classes=2, attention=not opt.no_attention, normalize_attn=True, init=opt.initialize)
+        net = AttnVGG(num_classes=2, attention=not opt.no_attention, normalize_attn=False, init=opt.initialize)
     elif opt.model == 'ResNet':
         print('\nbase model: ResNet ...\n')
         net = AttnResNet(num_classes=2, attention=not opt.no_attention, normalize_attn=True, init=opt.initialize)
@@ -124,7 +124,7 @@ def main():
 
     # optimizer
     optimizer = optim.SGD(model.parameters(), lr=opt.lr, momentum=0.9, weight_decay=5e-4)
-    lr_lambda = lambda epoch : np.power(0.1, epoch//10)
+    lr_lambda = lambda epoch : np.power(0.5, epoch//10)
     scheduler = lr_scheduler.LambdaLR(optimizer, lr_lambda=lr_lambda)
 
     # training
@@ -221,24 +221,33 @@ def main():
                 # training data
                 __, c1, c2, c3 = model.forward(images_disp[0])
                 if c1 is not None:
-                    attn1 = visualize_attn_softmax(I_train, c1, up_factor=opt.base_up_factor, nrow=4)
+                    attn1, stat = visualize_attn_sigmoid(I_train, c1, up_factor=opt.base_up_factor, nrow=4)
                     writer.add_image('train/attention_map_1', attn1, epoch)
+                    writer.add_scalar('train_c1/max', stat[0], epoch)
+                    writer.add_scalar('train_c1/min', stat[1], epoch)
+                    writer.add_scalar('train_c1/mean', stat[2], epoch)
                 if c2 is not None:
-                    attn2 = visualize_attn_softmax(I_train, c2, up_factor=2*opt.base_up_factor, nrow=4)
+                    attn2, stat = visualize_attn_sigmoid(I_train, c2, up_factor=2*opt.base_up_factor, nrow=4)
                     writer.add_image('train/attention_map_2', attn2, epoch)
+                    writer.add_scalar('train_c2/max', stat[0], epoch)
+                    writer.add_scalar('train_c2/min', stat[1], epoch)
+                    writer.add_scalar('train_c2/mean', stat[2], epoch)
                 if c3 is not None:
-                    attn3 = visualize_attn_softmax(I_train, c3, up_factor=4*opt.base_up_factor, nrow=4)
+                    attn3, stat = visualize_attn_sigmoid(I_train, c3, up_factor=4*opt.base_up_factor, nrow=4)
                     writer.add_image('train/attention_map_3', attn3, epoch)
+                    writer.add_scalar('train_c3/max', stat[0], epoch)
+                    writer.add_scalar('train_c3/min', stat[1], epoch)
+                    writer.add_scalar('train_c3/mean', stat[2], epoch)
                 # test data
                 __, c1, c2, c3 = model.forward(images_disp[1])
                 if c1 is not None:
-                    attn1 = visualize_attn_softmax(I_test, c1, up_factor=opt.base_up_factor, nrow=4)
+                    attn1, __ = visualize_attn_sigmoid(I_test, c1, up_factor=opt.base_up_factor, nrow=4)
                     writer.add_image('test/attention_map_1', attn1, epoch)
                 if c2 is not None:
-                    attn2 = visualize_attn_softmax(I_test, c2, up_factor=2*opt.base_up_factor, nrow=4)
+                    attn2, __ = visualize_attn_sigmoid(I_test, c2, up_factor=2*opt.base_up_factor, nrow=4)
                     writer.add_image('test/attention_map_2', attn2, epoch)
                 if c3 is not None:
-                    attn3 = visualize_attn_softmax(I_test, c3, up_factor=4*opt.base_up_factor, nrow=4)
+                    attn3, __ = visualize_attn_sigmoid(I_test, c3, up_factor=4*opt.base_up_factor, nrow=4)
                     writer.add_image('test/attention_map_3', attn3, epoch)
 
 if __name__ == "__main__":

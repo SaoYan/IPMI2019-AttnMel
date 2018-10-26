@@ -206,7 +206,11 @@ class NonLinearAttentionBlock(nn.Module):
             a = F.softmax(c.view(N,1,-1), dim=2).view(N,1,W,H)
         else:
             a = torch.sigmoid(c)
-        g = torch.mul(a.expand_as(l), l).view(N,C,-1).sum(dim=2) # batch_sizexC
+        g = torch.mul(a.expand_as(l), l)
+        if self.normalize_attn:
+            g = g.view(N,C,-1).sum(dim=2) # batch_sizexC
+        else:
+            g = F.adaptive_avg_pool2d(g, (1,1)).view(N,C)
         return c.view(N,1,W,H), g
 
 '''
@@ -299,10 +303,10 @@ https://github.com/kobiso/CBAM-keras
 '''
 class CBAMAttentionBlock(nn.Module):
     # Convolutional Block Attention Module https://arxiv.org/abs/1807.06521
-    def __init__(self, in_features, reduction=16, normalize_attn=False, out_pool=False):
+    def __init__(self, in_features, reduction=16, normalize_attn=False, reweight=False):
         super(CBAMAttentionBlock, self).__init__()
         self.normalize_attn = normalize_attn
-        self.out_pool = out_pool
+        self.reweight = reweight
         # channel attention
         self.avg_pool = nn.AdaptiveAvgPool2d(output_size=(1,1))
         self.max_pool = nn.AdaptiveMaxPool2d(output_size=(1,1))
@@ -333,6 +337,9 @@ class CBAMAttentionBlock(nn.Module):
         else:
             spatial_attn = torch.sigmoid(c)
         output = x_channel_attn.mul(spatial_attn)
-        if self.out_pool:
-            output = F.adaptive_avg_pool2d(output, (1,1)).view(N,C)
+        if self.reweight:
+            if self.normalize_attn:
+                output = output.view(N,C,-1).sum(dim=2)
+            else:
+                output = F.adaptive_avg_pool2d(output, (1,1)).view(N,C)
         return c, output
