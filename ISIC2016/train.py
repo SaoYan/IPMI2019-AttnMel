@@ -26,7 +26,7 @@ parser.add_argument("--preprocess", type=bool, default=False, help="whether to r
 
 parser.add_argument("--batch_size", type=int, default=32, help="batch size")
 parser.add_argument("--epochs", type=int, default=50, help="number of epochs")
-parser.add_argument("--lr", type=float, default=0.001, help="initial learning rate")
+parser.add_argument("--lr", type=float, default=0.01, help="initial learning rate")
 parser.add_argument("--outf", type=str, default="logs", help='path of log files')
 parser.add_argument("--base_up_factor", type=int, default=8, help="number of epochs")
 
