@@ -31,6 +31,7 @@ class AttnVGG(nn.Module):
         # initialize
         self.reset_parameters(self.classify)
         if self.attention:
+            self.reset_parameters(self.cbam)
             self.reset_parameters(self.attn1)
             self.reset_parameters(self.attn2)
     def reset_parameters(self, module):
