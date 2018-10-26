@@ -25,7 +25,7 @@ parser = argparse.ArgumentParser(description="Attn-Skin-Lesion")
 parser.add_argument("--preprocess", type=bool, default=False, help="whether to run preprocess_data")
 
 parser.add_argument("--batch_size", type=int, default=32, help="batch size")
-parser.add_argument("--epochs", type=int, default=200, help="number of epochs")
+parser.add_argument("--epochs", type=int, default=50, help="number of epochs")
 parser.add_argument("--lr", type=float, default=0.01, help="initial learning rate")
 parser.add_argument("--outf", type=str, default="logs", help='path of log files')
 parser.add_argument("--base_up_factor", type=int, default=8, help="number of epochs")
@@ -124,7 +124,7 @@ def main():
 
     # optimizer
     optimizer = optim.SGD(model.parameters(), lr=opt.lr, momentum=0.9, weight_decay=5e-4)
-    lr_lambda = lambda epoch : np.power(0.5, int(epoch/25))
+    lr_lambda = lambda epoch : np.power(0.5, epoch//10)
     scheduler = lr_scheduler.LambdaLR(optimizer, lr_lambda=lr_lambda)
 
     # training
