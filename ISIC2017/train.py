@@ -11,8 +11,8 @@ import torch.optim.lr_scheduler as lr_scheduler
 import torchvision
 import torchvision.utils as utils
 import torchvision.transforms as transforms
-from model5 import AttnVGG
-from model6 import AttnResNet
+from model_vgg_grid import AttnVGG
+from model_res_1 import AttnResNet
 from loss import FocalLoss
 from data import preprocess_data, ISIC2017
 from utilities import *
@@ -31,7 +31,7 @@ parser.add_argument("--outf", type=str, default="logs", help='path of log files'
 parser.add_argument("--base_up_factor", type=int, default=8, help="number of epochs")
 
 parser.add_argument("--model", type=str, default="VGGNet", help='VGGNet or ResNet')
-parser.add_argument("--initialize", type=str, default="kaimingNormal", help='kaimingNormal or kaimingUniform or xavierNormal or xavierUniform')
+parser.add_argument("--normalize_attn", type=bool, default=False, help='if True, attention map is normalized by softmax; otherwise use sigmoid')
 
 parser.add_argument("--focal_loss", action='store_true', help='turn on focal loss (otherwise use cross entropy loss)')
 parser.add_argument("--no_attention", action='store_true', help='turn off attention')
@@ -51,20 +51,22 @@ def main():
         print('\nno offline oversampling ...\n')
         num_aug = 8
         train_file = 'train.csv'
-    im_size = 256
+    im_size = 224
     transform_train = transforms.Compose([
-        transforms.Resize((300,300)),
+        transforms.Resize((256,256)),
         transforms.RandomCrop(im_size),
         transforms.RandomVerticalFlip(),
         transforms.RandomHorizontalFlip(),
         transforms.ToTensor(),
-        transforms.Normalize((0.6894, 0.5425, 0.4826), (0.0837, 0.1166, 0.1323))
+        #transforms.Normalize((0.6894, 0.5425, 0.4826), (0.0837, 0.1166, 0.1323))
+        transforms.Normalize((0.6916, 0.5459, 0.4865), (0.0834, 0.1164, 0.1322))
     ])
     transform_test = transforms.Compose([
-        transforms.Resize((300,300)),
+        transforms.Resize((256,256)),
         transforms.CenterCrop(im_size),
         transforms.ToTensor(),
-        transforms.Normalize((0.6894, 0.5425, 0.4826), (0.0837, 0.1166, 0.1323))
+        #transforms.Normalize((0.6894, 0.5425, 0.4826), (0.0837, 0.1166, 0.1323))
+        transforms.Normalize((0.6916, 0.5459, 0.4865), (0.0834, 0.1164, 0.1322))
     ])
     trainset = ISIC2017(csv_file=train_file, shuffle=True, transform=transform_train)
     trainloader = torch.utils.data.DataLoader(trainset, batch_size=opt.batch_size, shuffle=True, num_workers=8)
@@ -97,10 +99,10 @@ def main():
 
     if opt.model == 'VGGNet':
         print('\nbase model: VGGNet ...\n')
-        net = AttnVGG(num_classes=2, attention=not opt.no_attention, normalize_attn=True, init=opt.initialize)
+        net = AttnVGG(num_classes=2, attention=not opt.no_attention, normalize_attn=opt.normalize_attn)
     elif opt.model == 'ResNet':
         print('\nbase model: ResNet ...\n')
-        net = AttnResNet(num_classes=2, attention=not opt.no_attention, normalize_attn=True, init=opt.initialize)
+        net = AttnResNet(num_classes=2, attention=not opt.no_attention, normalize_attn=opt.normalize_attn)
     else:
         raise NotImplementedError("Invalid base model name!")
 
@@ -216,28 +218,41 @@ def main():
                     I_test = utils.make_grid(images_disp[1], nrow=4, normalize=True, scale_each=True)
                     writer.add_image('test/image', I_test, epoch)
             if opt.log_images and (not opt.no_attention):
+                if opt.normalize_attn:
+                    vis_fun = visualize_attn_softmax
+                else:
+                    vis_fun = visualize_attn_sigmoid
                 print('\nlog attention maps ...\n')
                 # training data
                 __, c1, c2, c3 = model.forward(images_disp[0])
                 if c1 is not None:
-                    attn1 = visualize_attn_softmax(I_train, c1, up_factor=opt.base_up_factor, nrow=4)
+                    attn1, stat = vis_fun(I_train, c1, up_factor=opt.base_up_factor, nrow=4)
                     writer.add_image('train/attention_map_1', attn1, epoch)
+                    writer.add_scalar('train_c1/max', stat[0], epoch)
+                    writer.add_scalar('train_c1/min', stat[1], epoch)
+                    writer.add_scalar('train_c1/mean', stat[2], epoch)
                 if c2 is not None:
-                    attn2 = visualize_attn_softmax(I_train, c2, up_factor=2*opt.base_up_factor, nrow=4)
+                    attn2, stat = vis_fun(I_train, c2, up_factor=2*opt.base_up_factor, nrow=4)
                     writer.add_image('train/attention_map_2', attn2, epoch)
+                    writer.add_scalar('train_c2/max', stat[0], epoch)
+                    writer.add_scalar('train_c2/min', stat[1], epoch)
+                    writer.add_scalar('train_c2/mean', stat[2], epoch)
                 if c3 is not None:
-                    attn3 = visualize_attn_softmax(I_train, c3, up_factor=4*opt.base_up_factor, nrow=4)
+                    attn3, stat = vis_fun(I_train, c3, up_factor=4*opt.base_up_factor, nrow=4)
                     writer.add_image('train/attention_map_3', attn3, epoch)
+                    writer.add_scalar('train_c3/max', stat[0], epoch)
+                    writer.add_scalar('train_c3/min', stat[1], epoch)
+                    writer.add_scalar('train_c3/mean', stat[2], epoch)
                 # test data
                 __, c1, c2, c3 = model.forward(images_disp[1])
                 if c1 is not None:
-                    attn1 = visualize_attn_softmax(I_test, c1, up_factor=opt.base_up_factor, nrow=4)
+                    attn1, __ = vis_fun(I_test, c1, up_factor=opt.base_up_factor, nrow=4)
                     writer.add_image('test/attention_map_1', attn1, epoch)
                 if c2 is not None:
-                    attn2 = visualize_attn_softmax(I_test, c2, up_factor=2*opt.base_up_factor, nrow=4)
+                    attn2, __ = vis_fun(I_test, c2, up_factor=2*opt.base_up_factor, nrow=4)
                     writer.add_image('test/attention_map_2', attn2, epoch)
                 if c3 is not None:
-                    attn3 = visualize_attn_softmax(I_test, c3, up_factor=4*opt.base_up_factor, nrow=4)
+                    attn3, __ = vis_fun(I_test, c3, up_factor=4*opt.base_up_factor, nrow=4)
                     writer.add_image('test/attention_map_3', attn3, epoch)
 
 if __name__ == "__main__":

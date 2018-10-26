@@ -9,8 +9,8 @@ import torch.nn.functional as F
 import torchvision
 import torchvision.utils as utils
 import torchvision.transforms as transforms
-from model5 import AttnVGG
-from model6 import AttnResNet
+from model_vgg_grid import AttnVGG
+from model_res_1 import AttnResNet
 from utilities import *
 from data import preprocess_data, ISIC2017
 
@@ -24,6 +24,7 @@ parser.add_argument("--outf", type=str, default="logs_test", help='path of log f
 parser.add_argument("--base_up_factor", type=int, default=8, help="number of epochs")
 
 parser.add_argument("--model", type=str, default="VGGNet", help='VGGNet or ResNet')
+parser.add_argument("--normalize_attn", type=bool, default=False, help='if True, attention map is normalized by softmax; otherwise use sigmoid')
 parser.add_argument("--no_attention", action='store_true', help='turn off attention')
 parser.add_argument("--log_images", action='store_true', help='log images')
 
@@ -42,7 +43,8 @@ def main():
         transforms.Resize((300,300)),
         transforms.CenterCrop(im_size),
         transforms.ToTensor(),
-        transforms.Normalize((0.6894, 0.5425, 0.4826), (0.0837, 0.1166, 0.1323))
+        #transforms.Normalize((0.6894, 0.5425, 0.4826), (0.0837, 0.1166, 0.1323))
+        transforms.Normalize((0.6916, 0.5459, 0.4865), (0.0834, 0.1164, 0.1322))
     ])
     testset = ISIC2017(csv_file='test.csv', shuffle=False, rotate=False, transform=transform_test)
     testloader = torch.utils.data.DataLoader(testset, batch_size=64, shuffle=False, num_workers=6)
@@ -57,11 +59,11 @@ def main():
 
     if opt.model == 'VGGNet':
         print('\nbase model: VGGNet ...\n')
-        net = AttnVGG(num_classes=2, attention=not opt.no_attention, normalize_attn=True)
+        net = AttnVGG(num_classes=2, attention=not opt.no_attention, normalize_attn=opt.normalize_attn)
         net._modules.get('feature')._modules.get('0').register_forward_hook(hook_feature)
     elif opt.model == 'ResNet':
         print('\nbase model: ResNet ...\n')
-        net = AttnResNet(num_classes=2, attention=not opt.no_attention, normalize_attn=True)
+        net = AttnResNet(num_classes=2, attention=not opt.no_attention, normalize_attn=opt.normalize_attn)
         net._modules.get('feature')._modules.get('1').register_forward_hook(hook_feature)
     else:
         raise NotImplementedError("Invalid base model name!")
@@ -101,15 +103,19 @@ def main():
                     cam = returnCAM(I_test, feature_conv=features_blobs, weight_softmax=params[-2].cpu().numpy(), class_idx=1, im_size=im_size, nrow=8)
                     writer.add_image('test/CAM', cam, i)
                     if not opt.no_attention:
+                        if opt.normalize_attn:
+                            vis_fun = visualize_attn_softmax
+                        else:
+                            vis_fun = visualize_attn_sigmoid
                         __, c1, c2, c3 = model.forward(images_test)
                         if c1 is not None:
-                            attn1 = visualize_attn_softmax(I_test, c1, up_factor=opt.base_up_factor, nrow=8)
+                            attn1 = vis_fun(I_test, c1, up_factor=opt.base_up_factor, nrow=8)
                             writer.add_image('test/attention_map_1', attn1, i)
                         if c2 is not None:
-                            attn2 = visualize_attn_softmax(I_test, c2, up_factor=2*opt.base_up_factor, nrow=8)
+                            attn2 = vis_fun(I_test, c2, up_factor=2*opt.base_up_factor, nrow=8)
                             writer.add_image('test/attention_map_2', attn2, i)
                         if c3 is not None:
-                            attn3 = visualize_attn_softmax(I_test, c3, up_factor=4*opt.base_up_factor, nrow=8)
+                            attn3 = vis_fun(I_test, c3, up_factor=4*opt.base_up_factor, nrow=8)
                             writer.add_image('test/attention_map_3', attn3, i)
     mAP, AUC, __ = compute_metrics('test_results.csv')
     precision, recall, recall_mel = compute_mean_pecision_recall('test_results.csv')

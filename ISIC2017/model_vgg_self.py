@@ -11,7 +11,7 @@ non-local self-attention
 '''
 
 class AttnVGG(nn.Module):
-    def __init__(self, num_classes, attention=True, normalize_attn=True, init='kaimingNormal'):
+    def __init__(self, num_classes, attention=True, normalize_attn=True):
         super(AttnVGG, self).__init__()
         self.attention = attention
         net = models.vgg16_bn(pretrained=True)

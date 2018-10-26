@@ -1,17 +1,17 @@
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-from blocks import GridAttentionBlock
+from blocks import GridAttentionBlock, CBAMAttentionBlock
 import torchvision.models as models
 
 '''
 vgg
 pretrain
-grid attention
+CBAM + grid attention
 '''
 
 class AttnVGG(nn.Module):
-    def __init__(self, num_classes, attention=True, normalize_attn=True, init='kaimingNormal'):
+    def __init__(self, num_classes, attention=True, normalize_attn=False):
         super(AttnVGG, self).__init__()
         self.attention = attention
         net = models.vgg16_bn(pretrained=True)
@@ -21,8 +21,7 @@ class AttnVGG(nn.Module):
         self.conv_block4 = nn.Sequential(*list(net.features.children())[24:33])
         self.conv_block5 = nn.Sequential(*list(net.features.children())[34:43])
         if self.attention:
-            # self.dense = nn.Linear(in_features=512*7*7, out_features=512, bias=True)
-            self.pool = nn.AvgPool2d(14, stride=1)
+            self.cbam = CBAMAttentionBlock(512, reduction=16, normalize_attn=normalize_attn, reweight=True)
             self.attn1 = GridAttentionBlock(256, 512, 256, 4, normalize_attn=normalize_attn)
             self.attn2 = GridAttentionBlock(512, 512, 256, 2, normalize_attn=normalize_attn)
             self.classify = nn.Linear(in_features=512+512+256, out_features=num_classes, bias=True)
@@ -32,15 +31,13 @@ class AttnVGG(nn.Module):
         # initialize
         self.reset_parameters(self.classify)
         if self.attention:
-            # self.reset_parameters(self.dense)
+            self.reset_parameters(self.cbam)
             self.reset_parameters(self.attn1)
             self.reset_parameters(self.attn2)
-        # if not normalize_attn:
-        #     nn.init.constant_(self.attn1.phi.bias, 10.)
     def reset_parameters(self, module):
         for m in module.modules():
             if isinstance(m, nn.Conv2d):
-                nn.init.kaiming_normal_(m.weight, mode='fan_out', nonlinearity='relu')
+                nn.init.kaiming_normal_(m.weight, a=0, mode='fan_in', nonlinearity='relu')
                 if m.bias is not None:
                     nn.init.constant_(m.bias, 0.)
             elif isinstance(m, nn.BatchNorm2d):
@@ -59,15 +56,16 @@ class AttnVGG(nn.Module):
         block4 = self.conv_block4(pool3)   # /8
         pool4 = F.max_pool2d(block4, 2, 2) # /16
         block5 = self.conv_block5(pool4)   # /16
-        N, __, __, __ = block5.size()
+        pool5 = F.max_pool2d(block5, 2, 2) # /32
+        N, __, __, __ = pool5.size()
         if self.attention:
-            g = self.pool(block5).view(N,512)
-            c1, g1 = self.attn1(block3, block5)
-            c2, g2 = self.attn2(block4, block5)
+            c3, g = self.cbam(pool5)
+            c1, g1 = self.attn1(pool3, pool5)
+            c2, g2 = self.attn2(pool4, pool5)
             g_hat = torch.cat((g,g1,g2), dim=1) # batch_size x C
             out = self.classify(g_hat)
         else:
-            g = self.dense(block5.view(N,-1))
+            g = self.dense(pool5.view(N,-1))
             out = self.classify(g)
-            c1, c2 = None, None
-        return [out, c1, c2, None]
+            c1, c2, c3 = None, None, None
+        return [out, c1, c2, c3]

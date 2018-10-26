@@ -9,8 +9,8 @@ import torch.nn.functional as F
 import torchvision
 import torchvision.utils as utils
 import torchvision.transforms as transforms
-from model5 import AttnVGG
-from model6 import AttnResNet
+from model_vgg_grid import AttnVGG
+from model_res_1 import AttnResNet
 from utilities_ import *
 from data import preprocess_data, ISIC2018
 
@@ -28,6 +28,7 @@ parser.add_argument("--outf", type=str, default="log_test", help='path of log fi
 parser.add_argument("--base_up_factor", type=int, default=8, help="number of epochs")
 
 parser.add_argument("--model", type=str, default="VGGNet", help='VGGNet or ResNet')
+parser.add_argument("--normalize_attn", type=bool, default=False, help='if True, attention map is normalized by softmax; otherwise use sigmoid')
 parser.add_argument("--no_attention", action='store_true', help='turn off attention')
 parser.add_argument("--log_images", action='store_true', help='log images')
 
@@ -56,10 +57,10 @@ def main():
 
     if opt.model == 'VGGNet':
         print('\nbase model: VGGNet ...\n')
-        net = AttnVGG(num_classes=7, attention=not opt.no_attention, normalize_attn=True)
+        net = AttnVGG(num_classes=7, attention=not opt.no_attention, normalize_attn=opt.normalize_attn)
     elif opt.model == 'ResNet':
         print('\nbase model: ResNet ...\n')
-        net = AttnResNet(num_classes=7, attention=not opt.no_attention, normalize_attn=True)
+        net = AttnResNet(num_classes=7, attention=not opt.no_attention, normalize_attn=opt.normalize_attn)
     else:
         raise NotImplementedError("Invalid base model name!")
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -88,20 +89,24 @@ def main():
                     I = utils.make_grid(images_test[0:16,:,:,:], nrow=4, normalize=True, scale_each=True)
                     writer.add_image('test/image', I, i)
                     if not opt.no_attention:
+                        if opt.normalize_attn:
+                            vis_fun = visualize_attn_softmax
+                        else:
+                            vis_fun = visualize_attn_sigmoid
                         __, c1, c2, c3 = model.forward(images_test[0:16,:,:,:])
                         if c1 is not None:
-                            attn1 = visualize_attn_softmax(I_test, c1, up_factor=opt.base_up_factor, nrow=4)
+                            attn1 = vis_fun(I_test, c1, up_factor=opt.base_up_factor, nrow=4)
                             writer.add_image('test/attention_map_1', attn1, i)
                         if c2 is not None:
-                            attn2 = visualize_attn_softmax(I_test, c2, up_factor=2*opt.base_up_factor, nrow=4)
+                            attn2 = vis_fun(I_test, c2, up_factor=2*opt.base_up_factor, nrow=4)
                             writer.add_image('test/attention_map_2', attn2, i)
                         if c3 is not None:
-                            attn3 = visualize_attn_softmax(I_test, c3, up_factor=4*opt.base_up_factor, nrow=4)
+                            attn3 = vis_fun(I_test, c3, up_factor=4*opt.base_up_factor, nrow=4)
                             writer.add_image('test/attention_map_3', attn3, i)
     precision, recall = compute_mean_pecision_recall('test_results.csv')
     print("\navg_precision %.2f%% avg_recall %.2f%%\n" % (100*np.mean(precision), 100*np.mean(recall)))
 
 if __name__ == "__main__":
     if opt.preprocess:
-        preprocess_data(root_dir='data')
+        preprocess_data(root_dir='data_2018')
     main()
