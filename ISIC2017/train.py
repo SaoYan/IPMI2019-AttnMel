@@ -199,16 +199,17 @@ def main():
                     responses = [responses[i] for i in range(responses.shape[0])]
                     csv_writer.writerows(responses)
             # log scalars
-            precision, recall, __ = compute_mean_pecision_recall('test_results.csv')
+            precision, recall, recall_mel = compute_mean_pecision_recall('test_results.csv')
             mAP, AUC, ROC = compute_metrics('test_results.csv')
             writer.add_scalar('test/accuracy', correct/total, epoch)
             writer.add_scalar('test/mean_precision', precision, epoch)
             writer.add_scalar('test/mean_recall', recall, epoch)
+            writer.add_scalar('test/recall_mel', recall_mel, epoch)
             writer.add_scalar('test/mAP', mAP, epoch)
             writer.add_scalar('test/AUC', AUC, epoch)
             writer.add_image('curve/ROC', ROC, epoch)
-            print("\n[epoch %d] test result: accuracy %.2f%% \nmean precision %.2f%% mean recall %.2f%% \nmAP %.2f%% AUC %.4f\n" %
-                (epoch, 100*correct/total, 100*precision, 100*recall, 100*mAP, AUC))
+            print("\n[epoch %d] test result: accuracy %.2f%% \nmean precision %.2f%% mean recall %.2f%% recall for mel %.2f%% \nmAP %.2f%% AUC %.4f\n" %
+                (epoch, 100*correct/total, 100*precision, 100*recall, 100*recall_mel, 100*mAP, AUC))
             # log images
             if opt.log_images:
                 print('\nlog images ...\n')

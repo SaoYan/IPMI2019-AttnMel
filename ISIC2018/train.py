@@ -18,7 +18,7 @@ from data import preprocess_data, ISIC2018
 from utilities_ import *
 
 os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"
-os.environ["CUDA_VISIBLE_DEVICES"] = "0,1"
+os.environ["CUDA_VISIBLE_DEVICES"] = "0,1,2,3"
 
 parser = argparse.ArgumentParser(description="Attn-Skin-Lesion")
 
@@ -114,7 +114,7 @@ def main():
     # move to GPU
     print('\nmoving models to GPU ...\n')
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    device_ids = [0,1]
+    device_ids = [0,1,2,3]
     model = nn.DataParallel(net, device_ids=device_ids).to(device)
     criterion.to(device)
     print('\ndone\n')

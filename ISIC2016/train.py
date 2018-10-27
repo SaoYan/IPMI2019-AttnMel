@@ -71,7 +71,7 @@ def main():
     trainset = ISIC2016(csv_file=train_file, shuffle=True, transform=transform_train)
     trainloader = torch.utils.data.DataLoader(trainset, batch_size=opt.batch_size, shuffle=True, num_workers=6)
     testset = ISIC2016(csv_file='test.csv', shuffle=False, rotate=False, transform=transform_test)
-    testloader = torch.utils.data.DataLoader(testset, batch_size=64, shuffle=False, num_workers=6)
+    testloader = torch.utils.data.DataLoader(testset, batch_size=32, shuffle=False, num_workers=6)
     # mean & std of the dataset
     '''
     Mean = torch.zeros(3)
@@ -201,8 +201,8 @@ def main():
             mAP, AUC, ROC = compute_metrics('test_results.csv')
             writer.add_scalar('test/accuracy', correct/total, epoch)
             writer.add_scalar('test/mean_precision', precision, epoch)
-            writer.add_scalar('test/mean_recall', recall_mel, epoch)
-            writer.add_scalar('test/recall', recall, epoch)
+            writer.add_scalar('test/mean_recall', recall, epoch)
+            writer.add_scalar('test/recall_mel', recall_mel, epoch)
             writer.add_scalar('test/mAP', mAP, epoch)
             writer.add_scalar('test/AUC', AUC, epoch)
             writer.add_image('curve/ROC', ROC, epoch)
@@ -218,11 +218,11 @@ def main():
                     writer.add_image('test/image', I_test, epoch)
             if opt.log_images and (not opt.no_attention):
                 print('\nlog attention maps ...\n')
+                # training data
                 if opt.normalize_attn:
                     vis_fun = visualize_attn_softmax
                 else:
                     vis_fun = visualize_attn_sigmoid
-                # training data
                 __, c1, c2, c3 = model.forward(images_disp[0])
                 if c1 is not None:
                     attn1, stat = vis_fun(I_train, c1, up_factor=opt.base_up_factor, nrow=4)
