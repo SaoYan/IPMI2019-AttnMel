@@ -101,6 +101,7 @@ def main():
                     params = model.state_dict()['module.classify.weight']
                     cam = returnCAM(I_test, feature_conv=features_blobs, weight_softmax=params.cpu().numpy(), class_idx=1, im_size=im_size, nrow=8)
                     writer.add_image('test/CAM', cam, i)
+                    # accention maps
                     if not opt.no_attention:
                         if opt.normalize_attn:
                             vis_fun = visualize_attn_softmax

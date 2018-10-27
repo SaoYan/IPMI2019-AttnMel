@@ -47,7 +47,7 @@ def main():
         transforms.Normalize((0.6916, 0.5459, 0.4865), (0.0834, 0.1164, 0.1322))
     ])
     testset = ISIC2017(csv_file='test.csv', shuffle=False, rotate=False, transform=transform_test)
-    testloader = torch.utils.data.DataLoader(testset, batch_size=64, shuffle=False, num_workers=6)
+    testloader = torch.utils.data.DataLoader(testset, batch_size=64, shuffle=False, num_workers=8)
     print('done')
 
     # load network
@@ -102,6 +102,7 @@ def main():
                     params = list(model.parameters())
                     cam = returnCAM(I_test, feature_conv=features_blobs, weight_softmax=params[-2].cpu().numpy(), class_idx=1, im_size=im_size, nrow=8)
                     writer.add_image('test/CAM', cam, i)
+                    # attention maps
                     if not opt.no_attention:
                         if opt.normalize_attn:
                             vis_fun = visualize_attn_softmax

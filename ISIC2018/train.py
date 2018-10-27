@@ -66,9 +66,9 @@ def main():
         transforms.Normalize((0.7560,0.5222,0.5431), (0.0909, 0.1248, 0.1401))
     ])
     trainset = ISIC2018(csv_file=train_file, shuffle=True, transform=transform_train)
-    trainloader = torch.utils.data.DataLoader(trainset, batch_size=opt.batch_size, shuffle=True, num_workers=6)
+    trainloader = torch.utils.data.DataLoader(trainset, batch_size=opt.batch_size, shuffle=True, num_workers=8)
     testset = ISIC2018(csv_file='test.csv', shuffle=False, rotate=False, transform=transform_test)
-    testloader = torch.utils.data.DataLoader(testset, batch_size=64, shuffle=False, num_workers=6)
+    testloader = torch.utils.data.DataLoader(testset, batch_size=64, shuffle=False, num_workers=8)
     # mean & std of the datase
     '''
     Mean = torch.zeros(3)

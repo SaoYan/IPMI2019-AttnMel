@@ -71,7 +71,7 @@ def main():
     trainset = ISIC2017(csv_file=train_file, shuffle=True, transform=transform_train)
     trainloader = torch.utils.data.DataLoader(trainset, batch_size=opt.batch_size, shuffle=True, num_workers=8)
     testset = ISIC2017(csv_file='test.csv', shuffle=False, rotate=False, transform=transform_test)
-    testloader = torch.utils.data.DataLoader(testset, batch_size=32, shuffle=False, num_workers=8)
+    testloader = torch.utils.data.DataLoader(testset, batch_size=64, shuffle=False, num_workers=8)
     # mean & std of the dataset
     '''
     Mean = torch.zeros(3)
