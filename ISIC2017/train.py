@@ -1,5 +1,6 @@
 import os
 import csv
+import random
 import argparse
 import numpy as np
 from tensorboardX import SummaryWriter
@@ -19,6 +20,11 @@ from utilities import *
 
 os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"
 os.environ["CUDA_VISIBLE_DEVICES"] = "0,1"
+
+base_seed = 0
+torch.backends.cudnn.deterministic=True
+torch.manual_seed(base_seed)
+torch.cuda.manual_seed_all(base_seed)
 
 parser = argparse.ArgumentParser(description="Attn-Skin-Lesion")
 
@@ -68,8 +74,13 @@ def main():
         #transforms.Normalize((0.6894, 0.5425, 0.4826), (0.0837, 0.1166, 0.1323))
         transforms.Normalize((0.6916, 0.5459, 0.4865), (0.0834, 0.1164, 0.1322))
     ])
+    def _init_fn(worker_id):
+        torch_seed = torch.initial_seed()
+        np_seed = torch_seed // 2**32-1
+        np.random.seed(np_seed)
+        random.seed(torch_seed)
     trainset = ISIC2017(csv_file=train_file, shuffle=True, transform=transform_train)
-    trainloader = torch.utils.data.DataLoader(trainset, batch_size=opt.batch_size, shuffle=True, num_workers=8)
+    trainloader = torch.utils.data.DataLoader(trainset, batch_size=opt.batch_size, shuffle=True, num_workers=8, worker_init_fn=_init_fn)
     testset = ISIC2017(csv_file='test.csv', shuffle=False, rotate=False, transform=transform_test)
     testloader = torch.utils.data.DataLoader(testset, batch_size=64, shuffle=False, num_workers=8)
     # mean & std of the dataset
