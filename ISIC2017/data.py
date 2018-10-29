@@ -8,6 +8,8 @@ import numpy as np
 import torch
 import torch.utils.data as udata
 
+random.seed(10000)
+
 def preprocess_data(root_dir):
     print('pre-processing data ...\n')
     # training data
@@ -73,7 +75,7 @@ class ISIC2017(udata.Dataset):
         image = image.crop((left, top, right, bottom))
         # rotate
         if self.rotate:
-            idx = np.random.randint(0,4)
+            idx = random.randint(0,3)
             image = image.rotate(idx*90)
         if self.transform:
             image = self.transform(image)

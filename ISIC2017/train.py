@@ -22,7 +22,7 @@ os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"
 os.environ["CUDA_VISIBLE_DEVICES"] = "0,1"
 
 base_seed = 0
-torch.backends.cudnn.deterministic=True
+torch.backends.cudnn.deterministic = True
 torch.manual_seed(base_seed)
 torch.cuda.manual_seed_all(base_seed)
 
@@ -75,10 +75,8 @@ def main():
         transforms.Normalize((0.6916, 0.5459, 0.4865), (0.0834, 0.1164, 0.1322))
     ])
     def _init_fn(worker_id):
-        torch_seed = torch.initial_seed()
-        np_seed = torch_seed // 2**32-1
-        np.random.seed(np_seed)
-        random.seed(torch_seed)
+        torch.manual_seed(base_seed + worker_id)
+        random.seed(base_seed + worker_id)
     trainset = ISIC2017(csv_file=train_file, shuffle=True, transform=transform_train)
     trainloader = torch.utils.data.DataLoader(trainset, batch_size=opt.batch_size, shuffle=True, num_workers=8, worker_init_fn=_init_fn)
     testset = ISIC2017(csv_file='test.csv', shuffle=False, rotate=False, transform=transform_test)
