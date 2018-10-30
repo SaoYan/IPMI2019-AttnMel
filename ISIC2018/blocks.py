@@ -203,7 +203,7 @@ Reference papers
 Attention-Gated Networks https://arxiv.org/abs/1804.05338 & https://arxiv.org/abs/1808.08114
 
 Reference code
-https://github.com/DadianisBidza/LearnToPayAttention-Keras
+https://github.com/ozan-oktay/Attention-Gated-Networks
 '''
 class GridAttentionBlock(nn.Module):
     def __init__(self, in_features_l, in_features_g, attn_features, up_factor, normalize_attn=True):
