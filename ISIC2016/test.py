@@ -19,7 +19,7 @@ os.environ["CUDA_VISIBLE_DEVICES"] = "0,1"
 
 parser = argparse.ArgumentParser(description="Attn-SKin-test")
 
-parser.add_argument("--preprocess", type=bool, default=False, help="whether to run preprocess_data")
+parser.add_argument("--preprocess", action='store_true', help="run preprocess_data")
 
 parser.add_argument("--outf", type=str, default="logs_test", help='path of log files')
 parser.add_argument("--base_up_factor", type=int, default=8, help="number of epochs")

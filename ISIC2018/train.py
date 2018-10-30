@@ -28,7 +28,7 @@ torch.cuda.manual_seed_all(base_seed)
 
 parser = argparse.ArgumentParser(description="Attn-Skin-train")
 
-parser.add_argument("--preprocess", type=bool, default=False, help="whether to run preprocess_data")
+parser.add_argument("--preprocess", action='store_true', help="run preprocess_data")
 parser.add_argument("--batch_size", type=int, default=64, help="batch size")
 parser.add_argument("--epochs", type=int, default=50, help="number of epochs")
 parser.add_argument("--lr", type=float, default=0.01, help="initial learning rate")

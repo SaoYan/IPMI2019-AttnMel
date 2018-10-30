@@ -19,7 +19,7 @@ os.environ["CUDA_VISIBLE_DEVICES"] = "0,1"
 
 parser = argparse.ArgumentParser(description="Attn-SKin-test")
 
-parser.add_argument("--preprocess", type=bool, default=False, help="whether to run preprocess_data")
+parser.add_argument("--preprocess", action='store_true', help="run preprocess_data")
 
 parser.add_argument("--outf", type=str, default="logs_test", help='path of log files')
 parser.add_argument("--base_up_factor", type=int, default=8, help="number of epochs")
@@ -34,9 +34,9 @@ opt = parser.parse_args()
 def main():
     # load data
     print('\nloading the dataset ...\n')
-    im_size = 256
+    im_size = 224
     transform_test = transforms.Compose([
-        transforms.Resize((300,300)),
+        transforms.Resize((256,256)),
         transforms.CenterCrop(im_size),
         transforms.ToTensor(),
         transforms.Normalize((0.6916, 0.5459, 0.4865), (0.0834, 0.1164, 0.1322))
