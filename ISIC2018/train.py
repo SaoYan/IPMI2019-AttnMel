@@ -258,4 +258,4 @@ def main():
 if __name__ == "__main__":
     if opt.preprocess:
         preprocess_data(root_dir='data_2018')
-    # main()
+    main()

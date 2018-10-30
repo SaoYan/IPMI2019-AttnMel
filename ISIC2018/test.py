@@ -74,6 +74,8 @@ def main():
     # testing
     print('\nstart testing ...\n')
     writer = SummaryWriter(opt.outf)
+    total = 0
+    correct = 0
     with torch.no_grad():
         with open('test_results.csv', 'wt', newline='') as csv_file:
             csv_writer = csv.writer(csv_file, delimiter=',')
@@ -81,6 +83,9 @@ def main():
                 images_test, labels_test = data
                 images_test, labels_test = images_test.to(device), labels_test.to(device)
                 pred_test, __, __, __ = model.forward(images_test)
+                predict = torch.argmax(pred_test, 1)
+                total += labels_test.size(0)
+                correct += torch.eq(predict, labels_test).sum().double().item()
                 # record test predicted responses
                 responses = F.softmax(pred_test, dim=1).squeeze().cpu().numpy()
                 responses = [responses[i] for i in range(responses.shape[0])]
@@ -89,8 +94,8 @@ def main():
                 idx = torch.eq(predict, labels_test).nonzero().cpu().numpy().squeeze(1)
                 images_disp = images_test[idx,:,:,:]
                 if opt.log_images:
-                    I = utils.make_grid(images_disp, nrow=8, normalize=True, scale_each=True)
-                    writer.add_image('test/image', I, i)
+                    I_test = utils.make_grid(images_disp, nrow=8, normalize=True, scale_each=True)
+                    writer.add_image('test/image', I_test, i)
                     if not opt.no_attention:
                         if opt.normalize_attn:
                             vis_fun = visualize_attn_softmax
@@ -107,7 +112,7 @@ def main():
                             attn3, __ = vis_fun(I_test, c3, up_factor=4*opt.base_up_factor, nrow=8)
                             writer.add_image('test/attention_map_3', attn3, i)
     precision, recall = compute_mean_pecision_recall('test_results.csv')
-    print("\navg_precision %.2f%% avg_recall %.2f%%\n" % (100*np.mean(precision), 100*np.mean(recall)))
+    print("accuracy %.2f%% \nmean precision %.2f%% mean recall %.2f%%\n" % (100*correct/total, 100*np.mean(precision), 100*np.mean(recall)))
 
 if __name__ == "__main__":
     if opt.preprocess:
