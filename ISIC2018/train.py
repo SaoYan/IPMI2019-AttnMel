@@ -26,7 +26,7 @@ torch.backends.cudnn.deterministic = True
 torch.manual_seed(base_seed)
 torch.cuda.manual_seed_all(base_seed)
 
-parser = argparse.ArgumentParser(description="Attn-Skin-Lesion")
+parser = argparse.ArgumentParser(description="Attn-Skin-train")
 
 parser.add_argument("--preprocess", type=bool, default=False, help="whether to run preprocess_data")
 parser.add_argument("--batch_size", type=int, default=64, help="batch size")
@@ -207,7 +207,7 @@ def main():
             writer.add_scalar('test/mean_recall', np.mean(recall), epoch)
             print(precision)
             print(recall)
-            print("\n[epoch %d] test result: accuracy %.2f%% \navg_precision %.2f%% avg_recall %.2f%%\n" %
+            print("\n[epoch %d] test result: accuracy %.2f%% \nmean precision %.2f%% mean recall %.2f%%\n" %
                 (epoch, 100*correct/total, 100*np.mean(precision), 100*np.mean(recall)))
             # log images
             if opt.log_images:
@@ -257,5 +257,5 @@ def main():
 
 if __name__ == "__main__":
     if opt.preprocess:
-        preprocess_data(root_dir='../data_2018')
+        preprocess_data(root_dir='data_2018')
     # main()

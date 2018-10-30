@@ -26,7 +26,7 @@ torch.backends.cudnn.deterministic = True
 torch.manual_seed(base_seed)
 torch.cuda.manual_seed_all(base_seed)
 
-parser = argparse.ArgumentParser(description="Attn-Skin-Lesion")
+parser = argparse.ArgumentParser(description="Attn-Skin-train")
 
 parser.add_argument("--preprocess", type=bool, default=False, help="whether to run preprocess_data")
 
@@ -63,14 +63,12 @@ def main():
         transforms.RandomVerticalFlip(),
         transforms.RandomHorizontalFlip(),
         transforms.ToTensor(),
-        #transforms.Normalize((0.6894, 0.5425, 0.4826), (0.0837, 0.1166, 0.1323))
         transforms.Normalize((0.6916, 0.5459, 0.4865), (0.0834, 0.1164, 0.1322))
     ])
     transform_test = transforms.Compose([
         transforms.Resize((256,256)),
         transforms.CenterCrop(im_size),
         transforms.ToTensor(),
-        #transforms.Normalize((0.6894, 0.5425, 0.4826), (0.0837, 0.1166, 0.1323))
         transforms.Normalize((0.6916, 0.5459, 0.4865), (0.0834, 0.1164, 0.1322))
     ])
     def _init_fn(worker_id):
@@ -163,7 +161,6 @@ def main():
                 pred, __, __, __ = model.forward(inputs)
                 # backward
                 loss = criterion(pred, labels)
-                # loss.backward()
                 loss.backward()
                 optimizer.step()
                 # display results
@@ -207,17 +204,19 @@ def main():
                     responses = [responses[i] for i in range(responses.shape[0])]
                     csv_writer.writerows(responses)
             # log scalars
-            precision, recall, recall_mel = compute_mean_pecision_recall('test_results.csv')
+            precision, recall, precision_mel, recall_mel = compute_mean_pecision_recall('test_results.csv')
             mAP, AUC, ROC = compute_metrics('test_results.csv')
             writer.add_scalar('test/accuracy', correct/total, epoch)
             writer.add_scalar('test/mean_precision', precision, epoch)
             writer.add_scalar('test/mean_recall', recall, epoch)
+            writer.add_scalar('test/precision_mel', precision_mel, epoch)
             writer.add_scalar('test/recall_mel', recall_mel, epoch)
             writer.add_scalar('test/mAP', mAP, epoch)
             writer.add_scalar('test/AUC', AUC, epoch)
             writer.add_image('curve/ROC', ROC, epoch)
-            print("\n[epoch %d] test result: accuracy %.2f%% \nmean precision %.2f%% mean recall %.2f%% recall for mel %.2f%% \nmAP %.2f%% AUC %.4f\n" %
-                (epoch, 100*correct/total, 100*precision, 100*recall, 100*recall_mel, 100*mAP, AUC))
+            print("\n[epoch %d] test result: accuracy %.2f%% \nmean precision %.2f%% mean recall %.2f%% \
+                    \nprecision for mel %.2f%% recall for mel %.2f%% \nmAP %.2f%% AUC %.4f\n" %
+                    (epoch, 100*correct/total, 100*precision, 100*recall, 100*precision_mel, 100*recall_mel, 100*mAP, AUC))
             # log images
             if opt.log_images:
                 print('\nlog images ...\n')

@@ -24,11 +24,12 @@ os.environ["CUDA_VISIBLE_DEVICES"] = "0,1"
 parser = argparse.ArgumentParser(description="Attn-SKin-FocalLoss-test")
 
 parser.add_argument("--preprocess", type=bool, default=False, help="whether to run preprocess_data")
+
 parser.add_argument("--outf", type=str, default="log_test", help='path of log files')
 parser.add_argument("--base_up_factor", type=int, default=8, help="number of epochs")
 
 parser.add_argument("--model", type=str, default="VGGNet", help='VGGNet or ResNet')
-parser.add_argument("--normalize_attn", type=bool, default=False, help='if True, attention map is normalized by softmax; otherwise use sigmoid')
+parser.add_argument("--normalize_attn", action='store_true', help='if True, attention map is normalized by softmax; otherwise use sigmoid')
 parser.add_argument("--no_attention", action='store_true', help='turn off attention')
 parser.add_argument("--log_images", action='store_true', help='log images')
 
@@ -85,23 +86,25 @@ def main():
                 responses = [responses[i] for i in range(responses.shape[0])]
                 csv_writer.writerows(responses)
                 # log images
+                idx = torch.eq(predict, labels_test).nonzero().cpu().numpy().squeeze(1)
+                images_disp = images_test[idx,:,:,:]
                 if opt.log_images:
-                    I = utils.make_grid(images_test[0:16,:,:,:], nrow=4, normalize=True, scale_each=True)
+                    I = utils.make_grid(images_disp, nrow=8, normalize=True, scale_each=True)
                     writer.add_image('test/image', I, i)
                     if not opt.no_attention:
                         if opt.normalize_attn:
                             vis_fun = visualize_attn_softmax
                         else:
                             vis_fun = visualize_attn_sigmoid
-                        __, c1, c2, c3 = model.forward(images_test[0:16,:,:,:])
+                        __, c1, c2, c3 = model.forward(images_disp)
                         if c1 is not None:
-                            attn1 = vis_fun(I_test, c1, up_factor=opt.base_up_factor, nrow=4)
+                            attn1, __ = vis_fun(I_test, c1, up_factor=opt.base_up_factor, nrow=8)
                             writer.add_image('test/attention_map_1', attn1, i)
                         if c2 is not None:
-                            attn2 = vis_fun(I_test, c2, up_factor=2*opt.base_up_factor, nrow=4)
+                            attn2, __ = vis_fun(I_test, c2, up_factor=2*opt.base_up_factor, nrow=8)
                             writer.add_image('test/attention_map_2', attn2, i)
                         if c3 is not None:
-                            attn3 = vis_fun(I_test, c3, up_factor=4*opt.base_up_factor, nrow=4)
+                            attn3, __ = vis_fun(I_test, c3, up_factor=4*opt.base_up_factor, nrow=8)
                             writer.add_image('test/attention_map_3', attn3, i)
     precision, recall = compute_mean_pecision_recall('test_results.csv')
     print("\navg_precision %.2f%% avg_recall %.2f%%\n" % (100*np.mean(precision), 100*np.mean(recall)))

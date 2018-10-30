@@ -97,8 +97,9 @@ def compute_mean_pecision_recall(result_file):
     # compute precision & recall
     precision  = precision_score(gt, pred, average='macro')
     recall     = recall_score(gt, pred, average='macro')
+    precision_mel  = precision_score(gt, pred, average='binary', pos_label=1)
     recall_mel = recall_score(gt, pred, average='binary', pos_label=1)
-    return precision, recall, recall_mel
+    return precision, recall, precision_mel, recall_mel
 
 def returnCAM(I, feature_conv, weight_softmax, class_idx, im_size, nrow):
     # image
