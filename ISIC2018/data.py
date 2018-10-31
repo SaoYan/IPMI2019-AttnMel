@@ -13,13 +13,13 @@ random.seed(10000)
 def preprocess_data(root_dir):
     print('pre-processing data ...\n')
     # training data
-    NV    = glob.glob(os.path.join(root_dir, 'Train', 'NV', '*.jpg'))
-    MEL   = glob.glob(os.path.join(root_dir, 'Train', 'MEL', '*.jpg'))
-    BKL   = glob.glob(os.path.join(root_dir, 'Train', 'BKL', '*.jpg'))
-    BCC   = glob.glob(os.path.join(root_dir, 'Train', 'BCC', '*.jpg'))
-    AKIEC = glob.glob(os.path.join(root_dir, 'Train', 'AKIEC', '*.jpg'))
-    VASC  = glob.glob(os.path.join(root_dir, 'Train', 'VASC', '*.jpg'))
-    DF    = glob.glob(os.path.join(root_dir, 'Train', 'DF', '*.jpg'))
+    NV    = glob.glob(os.path.join(root_dir, 'Train', 'NV', '*.jpg')); NV.sort()
+    MEL   = glob.glob(os.path.join(root_dir, 'Train', 'MEL', '*.jpg')); MEL.sort()
+    BKL   = glob.glob(os.path.join(root_dir, 'Train', 'BKL', '*.jpg')); BKL.sort()
+    BCC   = glob.glob(os.path.join(root_dir, 'Train', 'BCC', '*.jpg')); BCC.sort()
+    AKIEC = glob.glob(os.path.join(root_dir, 'Train', 'AKIEC', '*.jpg')); AKIEC.sort()
+    VASC  = glob.glob(os.path.join(root_dir, 'Train', 'VASC', '*.jpg')); VASC.sort()
+    DF    = glob.glob(os.path.join(root_dir, 'Train', 'DF', '*.jpg')); DF.sort()
     with open('train.csv', 'wt', newline='') as csv_file:
         writer = csv.writer(csv_file, delimiter=',')
         for filename in NV:
@@ -37,13 +37,13 @@ def preprocess_data(root_dir):
         for filename in DF:
             writer.writerow([filename] + ['6'])
     # training data oversample
-    NV    = glob.glob(os.path.join(root_dir, 'Train', 'NV', '*.jpg'))
-    MEL   = glob.glob(os.path.join(root_dir, 'Train', 'MEL', '*.jpg'))
-    BKL   = glob.glob(os.path.join(root_dir, 'Train', 'BKL', '*.jpg'))
-    BCC   = glob.glob(os.path.join(root_dir, 'Train', 'BCC', '*.jpg'))
-    AKIEC = glob.glob(os.path.join(root_dir, 'Train', 'AKIEC', '*.jpg'))
-    VASC  = glob.glob(os.path.join(root_dir, 'Train', 'VASC', '*.jpg'))
-    DF    = glob.glob(os.path.join(root_dir, 'Train', 'DF', '*.jpg'))
+    NV    = glob.glob(os.path.join(root_dir, 'Train', 'NV', '*.jpg')); NV.sort()
+    MEL   = glob.glob(os.path.join(root_dir, 'Train', 'MEL', '*.jpg')); MEL.sort()
+    BKL   = glob.glob(os.path.join(root_dir, 'Train', 'BKL', '*.jpg')); BKL.sort()
+    BCC   = glob.glob(os.path.join(root_dir, 'Train', 'BCC', '*.jpg')); BCC.sort()
+    AKIEC = glob.glob(os.path.join(root_dir, 'Train', 'AKIEC', '*.jpg')); AKIEC.sort()
+    VASC  = glob.glob(os.path.join(root_dir, 'Train', 'VASC', '*.jpg')); VASC.sort()
+    DF    = glob.glob(os.path.join(root_dir, 'Train', 'DF', '*.jpg')); DF.sort()
     with open('train_oversample.csv', 'wt', newline='') as csv_file:
         writer = csv.writer(csv_file, delimiter=',')
         for filename in NV:
@@ -67,13 +67,13 @@ def preprocess_data(root_dir):
             for filename in DF:
                 writer.writerow([filename] + ['6'])
     # test data
-    NV    = glob.glob(os.path.join(root_dir, 'Test', 'NV', '*.jpg'))
-    MEL   = glob.glob(os.path.join(root_dir, 'Test', 'MEL', '*.jpg'))
-    BKL   = glob.glob(os.path.join(root_dir, 'Test', 'BKL', '*.jpg'))
-    BCC   = glob.glob(os.path.join(root_dir, 'Test', 'BCC', '*.jpg'))
-    AKIEC = glob.glob(os.path.join(root_dir, 'Test', 'AKIEC', '*.jpg'))
-    VASC  = glob.glob(os.path.join(root_dir, 'Test', 'VASC', '*.jpg'))
-    DF    = glob.glob(os.path.join(root_dir, 'Test', 'DF', '*.jpg'))
+    NV    = glob.glob(os.path.join(root_dir, 'Test', 'NV', '*.jpg')); NV.sort()
+    MEL   = glob.glob(os.path.join(root_dir, 'Test', 'MEL', '*.jpg')); MEL.sort()
+    BKL   = glob.glob(os.path.join(root_dir, 'Test', 'BKL', '*.jpg')); BKL.sort()
+    BCC   = glob.glob(os.path.join(root_dir, 'Test', 'BCC', '*.jpg')); BCC.sort()
+    AKIEC = glob.glob(os.path.join(root_dir, 'Test', 'AKIEC', '*.jpg')); AKIEC.sort()
+    VASC  = glob.glob(os.path.join(root_dir, 'Test', 'VASC', '*.jpg')); VASC.sort()
+    DF    = glob.glob(os.path.join(root_dir, 'Test', 'DF', '*.jpg')); DF.sort()
     with open('test.csv', 'wt', newline='') as csv_file:
         writer = csv.writer(csv_file, delimiter=',')
         for filename in NV:

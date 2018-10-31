@@ -13,8 +13,8 @@ random.seed(10000)
 def preprocess_data(root_dir):
     print('pre-processing data ...\n')
     # training data
-    benign    = glob.glob(os.path.join(root_dir, 'Train', 'benign', '*.jpg'))
-    malignant = glob.glob(os.path.join(root_dir, 'Train', 'malignant', '*.jpg'))
+    benign    = glob.glob(os.path.join(root_dir, 'Train', 'benign', '*.jpg')); benign.sort()
+    malignant = glob.glob(os.path.join(root_dir, 'Train', 'malignant', '*.jpg')); malignant.sort()
     with open('train.csv', 'wt', newline='') as csv_file:
         writer = csv.writer(csv_file, delimiter=',')
         for filename in benign:
@@ -22,8 +22,8 @@ def preprocess_data(root_dir):
         for filename in malignant:
             writer.writerow([filename] + ['1'])
     # training data oversample
-    benign    = glob.glob(os.path.join(root_dir, 'Train', 'benign', '*.jpg'))
-    malignant = glob.glob(os.path.join(root_dir, 'Train', 'malignant', '*.jpg'))
+    benign    = glob.glob(os.path.join(root_dir, 'Train', 'benign', '*.jpg')); benign.sort()
+    malignant = glob.glob(os.path.join(root_dir, 'Train', 'malignant', '*.jpg')); malignant.sort()
     with open('train_oversample.csv', 'wt', newline='') as csv_file:
         writer = csv.writer(csv_file, delimiter=',')
         for filename in benign:
@@ -32,8 +32,8 @@ def preprocess_data(root_dir):
             for filename in malignant:
                 writer.writerow([filename] + ['1'])
     # test data
-    benign    = glob.glob(os.path.join(root_dir, 'Test', 'benign', '*.jpg'))
-    malignant = glob.glob(os.path.join(root_dir, 'Test', 'malignant', '*.jpg'))
+    benign    = glob.glob(os.path.join(root_dir, 'Test', 'benign', '*.jpg')); benign.sort()
+    malignant = glob.glob(os.path.join(root_dir, 'Test', 'malignant', '*.jpg')); malignant.sort()
     with open('test.csv', 'wt', newline='') as csv_file:
         writer = csv.writer(csv_file, delimiter=',')
         for filename in benign:

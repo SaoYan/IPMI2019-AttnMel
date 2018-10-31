@@ -72,7 +72,6 @@ def main():
         transforms.Normalize((0.6916, 0.5459, 0.4865), (0.0834, 0.1164, 0.1322))
     ])
     def _init_fn(worker_id):
-        torch.manual_seed(base_seed + worker_id)
         random.seed(base_seed + worker_id)
     trainset = ISIC2017(csv_file=train_file, shuffle=True, transform=transform_train)
     trainloader = torch.utils.data.DataLoader(trainset, batch_size=opt.batch_size, shuffle=True, num_workers=8, worker_init_fn=_init_fn)

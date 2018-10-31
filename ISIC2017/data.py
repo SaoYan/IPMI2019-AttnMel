@@ -13,9 +13,9 @@ random.seed(10000)
 def preprocess_data(root_dir):
     print('pre-processing data ...\n')
     # training data
-    melanoma = glob.glob(os.path.join(root_dir, 'Train', 'melanoma', '*.jpg'))
-    nevus    = glob.glob(os.path.join(root_dir, 'Train', 'nevus', '*.jpg'))
-    sk    = glob.glob(os.path.join(root_dir, 'Train', 'seborrheic_keratosis', '*.jpg'))
+    melanoma = glob.glob(os.path.join(root_dir, 'Train', 'melanoma', '*.jpg')); melanoma.sort()
+    nevus    = glob.glob(os.path.join(root_dir, 'Train', 'nevus', '*.jpg')); nevus.sort()
+    sk       = glob.glob(os.path.join(root_dir, 'Train', 'seborrheic_keratosis', '*.jpg')); sk.sort()
     with open('train.csv', 'wt', newline='') as csv_file:
         writer = csv.writer(csv_file, delimiter=',')
         for filename in melanoma:
@@ -25,9 +25,9 @@ def preprocess_data(root_dir):
         for filename in sk:
             writer.writerow([filename] + ['0'])
     # training data oversample
-    melanoma = glob.glob(os.path.join(root_dir, 'Train', 'melanoma', '*.jpg'))
-    nevus    = glob.glob(os.path.join(root_dir, 'Train', 'nevus', '*.jpg'))
-    sk    = glob.glob(os.path.join(root_dir, 'Train', 'seborrheic_keratosis', '*.jpg'))
+    melanoma = glob.glob(os.path.join(root_dir, 'Train', 'melanoma', '*.jpg')); melanoma.sort()
+    nevus    = glob.glob(os.path.join(root_dir, 'Train', 'nevus', '*.jpg')); nevus.sort()
+    sk       = glob.glob(os.path.join(root_dir, 'Train', 'seborrheic_keratosis', '*.jpg')); sk.sort()
     with open('train_oversample.csv', 'wt', newline='') as csv_file:
         writer = csv.writer(csv_file, delimiter=',')
         for i in range(4):
@@ -38,9 +38,9 @@ def preprocess_data(root_dir):
         for filename in sk:
             writer.writerow([filename] + ['0'])
     # test data
-    melanoma = glob.glob(os.path.join(root_dir, 'Test', 'melanoma', '*.jpg'))
-    nevus    = glob.glob(os.path.join(root_dir, 'Test', 'nevus', '*.jpg'))
-    sk    = glob.glob(os.path.join(root_dir, 'Test', 'seborrheic_keratosis', '*.jpg'))
+    melanoma = glob.glob(os.path.join(root_dir, 'Test', 'melanoma', '*.jpg')); melanoma.sort()
+    nevus    = glob.glob(os.path.join(root_dir, 'Test', 'nevus', '*.jpg')); nevus.sort()
+    sk       = glob.glob(os.path.join(root_dir, 'Test', 'seborrheic_keratosis', '*.jpg')); sk.sort()
     with open('test.csv', 'wt', newline='') as csv_file:
         writer = csv.writer(csv_file, delimiter=',')
         for filename in melanoma:
