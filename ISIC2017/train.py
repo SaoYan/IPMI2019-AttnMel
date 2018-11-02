@@ -90,13 +90,12 @@ def main():
 
     if not opt.no_attention:
         print('\nturn on attention ...\n')
+        if opt.normalize_attn:
+            print('\nuse softmax for attention map ...\n')
+        else:
+            print('\nuse sigmoid for attention map ...\n')
     else:
         print('\nturn off attention ...\n')
-
-    if opt.normalize_attn:
-        print('\nuse softmax for attention map ...\n')
-    else:
-        print('\nuse sigmoid for attention map ...\n')
 
     net = AttnVGG(num_classes=2, attention=not opt.no_attention, normalize_attn=opt.normalize_attn)
 

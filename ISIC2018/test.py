@@ -20,7 +20,7 @@ parser = argparse.ArgumentParser(description="Attn-SKin-FocalLoss-test")
 
 parser.add_argument("--preprocess", action='store_true', help="run preprocess_data")
 
-parser.add_argument("--outf", type=str, default="log_test", help='path of log files')
+parser.add_argument("--outf", type=str, default="logs_test", help='path of log files')
 parser.add_argument("--base_up_factor", type=int, default=8, help="number of epochs")
 
 parser.add_argument("--normalize_attn", action='store_true', help='if True, attention map is normalized by softmax; otherwise use sigmoid')
@@ -47,13 +47,12 @@ def main():
     print('\nloading the model ...\n')
     if not opt.no_attention:
         print('\nturn on attention ...\n')
+        if opt.normalize_attn:
+            print('\nuse softmax for attention map ...\n')
+        else:
+            print('\nuse sigmoid for attention map ...\n')
     else:
         print('\nturn off attention ...\n')
-
-    if opt.normalize_attn:
-        print('\nuse softmax for attention map ...\n')
-    else:
-        print('\nuse sigmoid for attention map ...\n')
 
     net = AttnVGG(num_classes=7, attention=not opt.no_attention, normalize_attn=opt.normalize_attn)
 

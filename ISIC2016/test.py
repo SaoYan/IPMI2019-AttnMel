@@ -47,16 +47,15 @@ def main():
     print('\nloading the model ...\n')
     if not opt.no_attention:
         print('\nturn on attention ...\n')
+        if opt.normalize_attn:
+            print('\nuse softmax for attention map ...\n')
+        else:
+            print('\nuse sigmoid for attention map ...\n')
     else:
         print('\nturn off attention ...\n')
 
-    if opt.normalize_attn:
-        print('\nuse softmax for attention map ...\n')
-    else:
-        print('\nuse sigmoid for attention map ...\n')
-
     net = AttnVGG(num_classes=2, attention=not opt.no_attention, normalize_attn=opt.normalize_attn)
-    
+
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     device_ids = [0,1]
     model = nn.DataParallel(net, device_ids=device_ids).to(device)
