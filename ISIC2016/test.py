@@ -10,7 +10,6 @@ import torchvision
 import torchvision.utils as utils
 import torchvision.transforms as transforms
 from model_vgg_grid import AttnVGG
-from model_res_1 import AttnResNet
 from utilities import *
 from data import preprocess_data, ISIC2016
 
@@ -24,7 +23,6 @@ parser.add_argument("--preprocess", action='store_true', help="run preprocess_da
 parser.add_argument("--outf", type=str, default="logs_test", help='path of log files')
 parser.add_argument("--base_up_factor", type=int, default=8, help="number of epochs")
 
-parser.add_argument("--model", type=str, default="VGGNet", help='VGGNet or ResNet')
 parser.add_argument("--normalize_attn", action='store_true', help='if True, attention map is normalized by softmax; otherwise use sigmoid')
 parser.add_argument("--no_attention", action='store_true', help='turn off attention')
 parser.add_argument("--log_images", action='store_true', help='log images')
@@ -52,14 +50,13 @@ def main():
     else:
         print('\nturn off attention ...\n')
 
-    if opt.model == 'VGGNet':
-        print('\nbase model: VGGNet ...\n')
-        net = AttnVGG(num_classes=2, attention=not opt.no_attention, normalize_attn=opt.normalize_attn)
-    elif opt.model == 'ResNet':
-        print('\nbase model: ResNet ...\n')
-        net = AttnResNet(num_classes=2, attention=not opt.no_attention, normalize_attn=opt.normalize_attn)
+    if opt.normalize_attn:
+        print('\nuse softmax for attention map ...\n')
     else:
-        raise NotImplementedError("Invalid base model name!")
+        print('\nuse sigmoid for attention map ...\n')
+
+    net = AttnVGG(num_classes=2, attention=not opt.no_attention, normalize_attn=opt.normalize_attn)
+    
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     device_ids = [0,1]
     model = nn.DataParallel(net, device_ids=device_ids).to(device)

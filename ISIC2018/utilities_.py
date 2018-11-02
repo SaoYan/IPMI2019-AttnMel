@@ -5,12 +5,7 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 import torchvision.utils as utils
-from sklearn.metrics import average_precision_score, precision_recall_curve, roc_auc_score, precision_score, recall_score
-
-import matplotlib
-matplotlib.use('Agg')
-from matplotlib.backends.backend_agg import FigureCanvasAgg
-from matplotlib.figure import Figure
+from sklearn.metrics import precision_score, recall_score
 
 def visualize_attn_softmax(I, c, up_factor, nrow):
     # image

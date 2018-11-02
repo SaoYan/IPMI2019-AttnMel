@@ -13,7 +13,6 @@ import torchvision
 import torchvision.utils as utils
 import torchvision.transforms as transforms
 from model_vgg_grid import AttnVGG
-from model_res_1 import AttnResNet
 from loss import FocalLoss
 from data import preprocess_data, ISIC2018
 from utilities_ import *
@@ -21,20 +20,15 @@ from utilities_ import *
 os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"
 os.environ["CUDA_VISIBLE_DEVICES"] = "0,1,2,3"
 
-base_seed = 0
-torch.backends.cudnn.deterministic = True
-torch.manual_seed(base_seed)
-torch.cuda.manual_seed_all(base_seed)
-
 parser = argparse.ArgumentParser(description="Attn-Skin-train")
 
 parser.add_argument("--preprocess", action='store_true', help="run preprocess_data")
+
 parser.add_argument("--batch_size", type=int, default=64, help="batch size")
 parser.add_argument("--epochs", type=int, default=50, help="number of epochs")
 parser.add_argument("--lr", type=float, default=0.01, help="initial learning rate")
 parser.add_argument("--outf", type=str, default="logs", help='path of log files')
 parser.add_argument("--base_up_factor", type=int, default=8, help="number of epochs")
-parser.add_argument("--model", type=str, default="VGGNet", help='VGGNet or ResNet')
 
 parser.add_argument("--normalize_attn", action='store_true', help='if True, attention map is normalized by softmax; otherwise use sigmoid')
 parser.add_argument("--focal_loss", action='store_true', help='turn on focal loss (otherwise use cross entropy loss)')
@@ -70,10 +64,8 @@ def main():
         transforms.ToTensor(),
         transforms.Normalize((0.7560,0.5222,0.5431), (0.0909, 0.1248, 0.1401))
     ])
-    def _init_fn(worker_id):
-        random.seed(base_seed + worker_id)
     trainset = ISIC2018(csv_file=train_file, shuffle=True, transform=transform_train)
-    trainloader = torch.utils.data.DataLoader(trainset, batch_size=opt.batch_size, shuffle=True, num_workers=8, worker_init_fn=_init_fn)
+    trainloader = torch.utils.data.DataLoader(trainset, batch_size=opt.batch_size, shuffle=True, num_workers=8)
     testset = ISIC2018(csv_file='test.csv', shuffle=False, rotate=False, transform=transform_test)
     testloader = torch.utils.data.DataLoader(testset, batch_size=64, shuffle=False, num_workers=8)
     # mean & std of the datase
@@ -101,14 +93,12 @@ def main():
     else:
         print('\nturn off attention ...\n')
 
-    if opt.model == 'VGGNet':
-        print('\nbase model: VGGNet ...\n')
-        net = AttnVGG(num_classes=7, attention=not opt.no_attention, normalize_attn=opt.normalize_attn)
-    elif opt.model == 'ResNet':
-        print('\nbase model: ResNet ...\n')
-        net = AttnResNet(num_classes=7, attention=not opt.no_attention, normalize_attn=opt.normalize_attn)
+    if opt.normalize_attn:
+        print('\nuse softmax for attention map ...\n')
     else:
-        raise NotImplementedError("Invalid base model name!")
+        print('\nuse sigmoid for attention map ...\n')
+
+    net = AttnVGG(num_classes=7, attention=not opt.no_attention, normalize_attn=opt.normalize_attn)
 
     if opt.focal_loss:
         print('\nuse focal loss ...\n')

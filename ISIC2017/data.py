@@ -8,8 +8,6 @@ import numpy as np
 import torch
 import torch.utils.data as udata
 
-random.seed(10000)
-
 def preprocess_data(root_dir):
     print('pre-processing data ...\n')
     # training data
