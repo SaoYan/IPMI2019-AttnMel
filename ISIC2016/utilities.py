@@ -60,13 +60,11 @@ def compute_metrics(result_file):
             pred.append(prob[1])
             i += 1
     # compute mAP
-    mAP = average_precision_score(gt, pred)
-    # mAP = average_precision_score(gt, pred, average='samples')
-    # compute precision and recall
-    precision, recall, __ = precision_recall_curve(gt, pred)
+    mAP = average_precision_score(gt, pred, average='macro')
     # compute AUC
     AUC = roc_auc_score(gt, pred)
     # plot ROC curve
+    precision, recall, __ = precision_recall_curve(gt, pred, pos_label=1)
     fig = Figure()
     canvas = FigureCanvasAgg(fig)
     ax = fig.gca()
@@ -82,7 +80,7 @@ def compute_metrics(result_file):
     I = np.transpose(I, [2,0,1])
     return mAP, AUC, torch.Tensor(np.float32(I))
 
-def compute_mean_pecision_recall(result_file):
+def compute_mean_pecision_recall(result_file, threshold=0.5):
     # groundtruth
     with open('test.csv', 'r', newline='') as csv_file:
         reader = csv.reader(csv_file, delimiter=',')
@@ -93,7 +91,7 @@ def compute_mean_pecision_recall(result_file):
         reader = csv.reader(csv_file, delimiter=',')
         for row in reader:
             prob = np.array(list(map(float, row)))
-            pred.append(np.argmax(prob))
+            pred.append(np.float32(prob[1] >= threshold))
     # compute precision & recall
     precision  = precision_score(gt, pred, average='macro')
     recall     = recall_score(gt, pred, average='macro')

@@ -301,7 +301,7 @@ class CBAMAttentionBlock(nn.Module):
         # spatial attention
         self.conv = nn.Conv2d(in_channels=2, out_channels=1, kernel_size=7, stride=1, padding=3, bias=False)
     def forward(self, x):
-        N, C, __, __ = x.size()
+        N, C, W, H = x.size()
         # channel attention
         avg_pool = self.mlp(self.avg_pool(x)) # N x C x 1 x 1
         max_pool = self.mlp(self.max_pool(x)) # N x C x 1 x 1
@@ -315,8 +315,7 @@ class CBAMAttentionBlock(nn.Module):
         ch_max_pool, __ = torch.max(x_channel_attn, dim=1, keepdim=True)
         c = self.conv(torch.cat((ch_avg_pool,ch_max_pool), 1))
         if self.normalize_attn:
-            N, C, W, H = c.size() # C = 1
-            spatial_attn = F.softmax(c.view(N,C,-1), dim=2).view(N,C,W,H)
+            spatial_attn = F.softmax(c.view(N,1,-1), dim=2).view(N,1,W,H)
         else:
             spatial_attn = torch.sigmoid(c)
         output = x_channel_attn.mul(spatial_attn)
