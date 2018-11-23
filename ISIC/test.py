@@ -11,10 +11,15 @@ import torchvision.utils as utils
 import torchvision.transforms as transforms
 from model_vgg_grid import AttnVGG
 from utilities import *
-from data import preprocess_data, ISIC2017
+from data_2017 import preprocess_data, ISIC
 
 os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"
 os.environ["CUDA_VISIBLE_DEVICES"] = "0,1"
+
+torch.backends.cudnn.benchmark = True
+
+device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+device_ids = [0,1]
 
 parser = argparse.ArgumentParser(description="Attn-SKin-test")
 
@@ -37,9 +42,10 @@ def main():
         transforms.Resize((256,256)),
         transforms.CenterCrop(im_size),
         transforms.ToTensor(),
-        transforms.Normalize((0.6916, 0.5459, 0.4865), (0.0834, 0.1164, 0.1322))
+        # transforms.Normalize((0.7105, 0.5646, 0.4978), (0.0911, 0.1309, 0.1513)) # ISIC 2016
+        transforms.Normalize((0.6916, 0.5459, 0.4865), (0.0834, 0.1164, 0.1322)) # ISIC 2017
     ])
-    testset = ISIC2017(csv_file='test.csv', shuffle=False, rotate=False, transform=transform_test)
+    testset = ISIC(csv_file='test.csv', shuffle=False, rotate=False, transform=transform_test)
     testloader = torch.utils.data.DataLoader(testset, batch_size=64, shuffle=False, num_workers=8)
     print('done')
 
@@ -55,11 +61,9 @@ def main():
         print('\nturn off attention ...\n')
 
     net = AttnVGG(num_classes=2, attention=not opt.no_attention, normalize_attn=opt.normalize_attn)
-
-    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    device_ids = [0,1]
+    checkpoint = torch.load(checkpoint.pth)
+    net.load_state_dict(checkpoint['state_dict'])
     model = nn.DataParallel(net, device_ids=device_ids).to(device)
-    model.load_state_dict(torch.load('net.pth'))
     model.eval()
     print('done')
 
@@ -88,7 +92,7 @@ def main():
                 if opt.log_images:
                     I_test = utils.make_grid(images_disp, nrow=8, normalize=True, scale_each=True)
                     writer.add_image('test/image', I_test, i)
-                    # attention maps
+                    # accention maps
                     if not opt.no_attention:
                         if opt.normalize_attn:
                             vis_fun = visualize_attn_softmax
@@ -112,5 +116,5 @@ def main():
 
 if __name__ == "__main__":
     if opt.preprocess:
-        preprocess_data(root_dir='data_2017')
+        preprocess_data(root_dir='data_2016')
     main()

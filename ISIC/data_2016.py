@@ -39,7 +39,7 @@ def preprocess_data(root_dir):
         for filename in malignant:
             writer.writerow([filename] + ['1'])
 
-class ISIC2016(udata.Dataset):
+class ISIC(udata.Dataset):
     def __init__(self, csv_file, shuffle=True, rotate=True, transform=None):
         file = open(csv_file, newline='')
         reader = csv.reader(file, delimiter=',')

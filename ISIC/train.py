@@ -14,11 +14,16 @@ import torchvision.utils as utils
 import torchvision.transforms as transforms
 from model_vgg_grid import AttnVGG
 from loss import FocalLoss
-from data import preprocess_data, ISIC2017
+from data_2017 import preprocess_data, ISIC
 from utilities import *
 
 os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"
 os.environ["CUDA_VISIBLE_DEVICES"] = "0,1"
+
+torch.backends.cudnn.benchmark = True
+
+device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+device_ids = [0,1]
 
 parser = argparse.ArgumentParser(description="Attn-Skin-train")
 
@@ -34,20 +39,26 @@ parser.add_argument("--normalize_attn", action='store_true', help='if True, atte
 parser.add_argument("--focal_loss", action='store_true', help='turn on focal loss (otherwise use cross entropy loss)')
 parser.add_argument("--no_attention", action='store_true', help='turn off attention')
 parser.add_argument("--over_sample", action='store_true', help='offline oversampling')
-parser.add_argument("--log_images", action='store_true', help='log images')
+parser.add_argument("--log_images", action='store_true', help='offline oversampling')
 
 opt = parser.parse_args()
+
+def __worker_init_fn__():
+    torch_seed = torch.initial_seed()
+    np_seed = torch_seed // 2**32-1
+    random.seed(torch_seed)
+    np.random.seed(np_seed)
 
 def main():
     # load data
     print('\nloading the dataset ...\n')
     if opt.over_sample:
         print('\ndata is offline oversampled ...\n')
-        num_aug = 5
+        num_aug = 10
         train_file = 'train_oversample.csv'
     else:
         print('\nno offline oversampling ...\n')
-        num_aug = 8
+        num_aug = 10
         train_file = 'train.csv'
     im_size = 224
     transform_train = transforms.Compose([
@@ -56,17 +67,19 @@ def main():
         transforms.RandomVerticalFlip(),
         transforms.RandomHorizontalFlip(),
         transforms.ToTensor(),
-        transforms.Normalize((0.6916, 0.5459, 0.4865), (0.0834, 0.1164, 0.1322))
+        # transforms.Normalize((0.7105, 0.5646, 0.4978), (0.0911, 0.1309, 0.1513)) # ISIC 2016
+        transforms.Normalize((0.6916, 0.5459, 0.4865), (0.0834, 0.1164, 0.1322)) # ISIC 2017
     ])
     transform_test = transforms.Compose([
         transforms.Resize((256,256)),
         transforms.CenterCrop(im_size),
         transforms.ToTensor(),
-        transforms.Normalize((0.6916, 0.5459, 0.4865), (0.0834, 0.1164, 0.1322))
+        # transforms.Normalize((0.7105, 0.5646, 0.4978), (0.0911, 0.1309, 0.1513)) # ISIC 2016
+        transforms.Normalize((0.6916, 0.5459, 0.4865), (0.0834, 0.1164, 0.1322)) # ISIC 2017
     ])
-    trainset = ISIC2017(csv_file=train_file, shuffle=True, transform=transform_train)
-    trainloader = torch.utils.data.DataLoader(trainset, batch_size=opt.batch_size, shuffle=True, num_workers=8)
-    testset = ISIC2017(csv_file='test.csv', shuffle=False, rotate=False, transform=transform_test)
+    trainset = ISIC(csv_file=train_file, shuffle=True, transform=transform_train)
+    trainloader = torch.utils.data.DataLoader(trainset, batch_size=opt.batch_size, shuffle=True, num_workers=8, worker_init_fn=__worker_init_fn__())
+    testset = ISIC(csv_file='test.csv', shuffle=False, rotate=False, transform=transform_test)
     testloader = torch.utils.data.DataLoader(testset, batch_size=64, shuffle=False, num_workers=8)
     # mean & std of the dataset
     '''
@@ -109,8 +122,6 @@ def main():
 
     # move to GPU
     print('\nmoving models to GPU ...\n')
-    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    device_ids = [0,1]
     model = nn.DataParallel(net, device_ids=device_ids).to(device)
     criterion.to(device)
     print('\ndone\n')
@@ -140,7 +151,6 @@ def main():
                 model.zero_grad()
                 optimizer.zero_grad()
                 inputs, labels = data
-                # inputs = (inputs - Mean.view(1,3,1,1)) / Std.view(1,3,1,1)
                 inputs, labels = inputs.to(device), labels.to(device)
                 if (aug == 0) and (i == 0): # archive images in order to save to logs
                     images_disp.append(inputs[0:16,:,:,:])
@@ -168,9 +178,13 @@ def main():
         # the end of each epoch: test & log
         model.eval()
         print('\none epoch done, saving checkpoints ...\n')
-        torch.save(model.state_dict(), os.path.join(opt.outf, 'net.pth'))
+        checkpoint = {
+            'state_dict': model.module.state_dict(),
+            'opt_state_dict': optimizer.state_dict(),
+        }
+        torch.save(checkpoint, os.path.join(opt.outf,'checkpoint.pth'))
         if epoch == opt.epochs / 2:
-            torch.save(model.state_dict(), os.path.join(opt.outf, 'net%d.pth' % epoch))
+            torch.save(checkpoint, os.path.join(opt.outf, 'checkpoint_%d.pth' % epoch))
         total = 0
         correct = 0
         with torch.no_grad():
@@ -178,7 +192,6 @@ def main():
                 csv_writer = csv.writer(csv_file, delimiter=',')
                 for i, data in enumerate(testloader, 0):
                     images_test, labels_test = data
-                    # images_test = (images_test - Mean.view(1,3,1,1)) / Std.view(1,3,1,1)
                     images_test, labels_test = images_test.to(device), labels_test.to(device)
                     if i == 0: # archive images in order to save to logs
                         images_disp.append(images_test[0:16,:,:,:])
@@ -213,11 +226,11 @@ def main():
                     I_test = utils.make_grid(images_disp[1], nrow=4, normalize=True, scale_each=True)
                     writer.add_image('test/image', I_test, epoch)
             if opt.log_images and (not opt.no_attention):
+                print('\nlog attention maps ...\n')
                 if opt.normalize_attn:
                     vis_fun = visualize_attn_softmax
                 else:
                     vis_fun = visualize_attn_sigmoid
-                print('\nlog attention maps ...\n')
                 # training data
                 __, c1, c2, c3 = model.forward(images_disp[0])
                 if c1 is not None:
@@ -252,5 +265,5 @@ def main():
 
 if __name__ == "__main__":
     if opt.preprocess:
-        preprocess_data(root_dir='../data_2017')
+        preprocess_data(root_dir='../data_2016')
     main()
