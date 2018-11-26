@@ -63,11 +63,11 @@ def main():
     print('\nloading the dataset ...\n')
     if opt.over_sample:
         print('\ndata is offline oversampled ...\n')
-        num_aug = 10
+        num_aug = 3
         train_file = 'train_oversample.csv'
     else:
         print('\nno offline oversampling ...\n')
-        num_aug = 10
+        num_aug = 5
         train_file = 'train.csv'
     im_size = 224
     transform_test = transforms.Compose([

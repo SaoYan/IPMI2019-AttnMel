@@ -63,11 +63,11 @@ def main():
     print('\nloading the dataset ...\n')
     if opt.over_sample:
         print('\ndata is offline oversampled ...\n')
-        num_aug = 10
+        num_aug = 3
         train_file = 'train_oversample.csv'
     else:
         print('\nno offline oversampling ...\n')
-        num_aug = 10
+        num_aug = 5
         train_file = 'train.csv'
     im_size = 224
     transform_test = transforms.Compose([
@@ -236,40 +236,36 @@ def main():
                     writer.add_image('test/image', I_test, epoch)
             if opt.log_images and (not opt.no_attention):
                 print('\nlog attention maps ...\n')
-                if opt.normalize_attn:
-                    vis_fun = visualize_attn_softmax
-                else:
-                    vis_fun = visualize_attn_sigmoid
                 # training data
-                __, c1, c2, c3 = model.forward(images_disp[0])
-                if c1 is not None:
-                    attn1, stat = vis_fun(I_train, c1, up_factor=opt.base_up_factor, nrow=4)
+                __, a1, a2, a3 = model.forward(images_disp[0])
+                if a1 is not None:
+                    attn1, stat = visualize_attn(I_train, a1, up_factor=opt.base_up_factor, nrow=4)
                     writer.add_image('train/attention_map_1', attn1, epoch)
-                    writer.add_scalar('train_c1/max', stat[0], epoch)
-                    writer.add_scalar('train_c1/min', stat[1], epoch)
-                    writer.add_scalar('train_c1/mean', stat[2], epoch)
-                if c2 is not None:
-                    attn2, stat = vis_fun(I_train, c2, up_factor=2*opt.base_up_factor, nrow=4)
+                    writer.add_scalar('train_a1/max', stat[0], epoch)
+                    writer.add_scalar('train_a1/min', stat[1], epoch)
+                    writer.add_scalar('train_a1/mean', stat[2], epoch)
+                if a2 is not None:
+                    attn2, stat = visualize_attn(I_train, a2, up_factor=2*opt.base_up_factor, nrow=4)
                     writer.add_image('train/attention_map_2', attn2, epoch)
-                    writer.add_scalar('train_c2/max', stat[0], epoch)
-                    writer.add_scalar('train_c2/min', stat[1], epoch)
-                    writer.add_scalar('train_c2/mean', stat[2], epoch)
-                if c3 is not None:
-                    attn3, stat = vis_fun(I_train, c3, up_factor=4*opt.base_up_factor, nrow=4)
+                    writer.add_scalar('train_a2/max', stat[0], epoch)
+                    writer.add_scalar('train_a2/min', stat[1], epoch)
+                    writer.add_scalar('train_a2/mean', stat[2], epoch)
+                if a3 is not None:
+                    attn3, stat = visualize_attn(I_train, a3, up_factor=4*opt.base_up_factor, nrow=4)
                     writer.add_image('train/attention_map_3', attn3, epoch)
-                    writer.add_scalar('train_c3/max', stat[0], epoch)
-                    writer.add_scalar('train_c3/min', stat[1], epoch)
-                    writer.add_scalar('train_c3/mean', stat[2], epoch)
+                    writer.add_scalar('train_a3/max', stat[0], epoch)
+                    writer.add_scalar('train_a3/min', stat[1], epoch)
+                    writer.add_scalar('train_a3/mean', stat[2], epoch)
                 # test data
-                __, c1, c2, c3 = model.forward(images_disp[1])
-                if c1 is not None:
-                    attn1, __ = vis_fun(I_test, c1, up_factor=opt.base_up_factor, nrow=4)
+                __, a1, a2, a3 = model.forward(images_disp[1])
+                if a1 is not None:
+                    attn1, __ = visualize_attn(I_test, a1, up_factor=opt.base_up_factor, nrow=4)
                     writer.add_image('test/attention_map_1', attn1, epoch)
-                if c2 is not None:
-                    attn2, __ = vis_fun(I_test, c2, up_factor=2*opt.base_up_factor, nrow=4)
+                if a2 is not None:
+                    attn2, __ = visualize_attn(I_test, a2, up_factor=2*opt.base_up_factor, nrow=4)
                     writer.add_image('test/attention_map_2', attn2, epoch)
-                if c3 is not None:
-                    attn3, __ = vis_fun(I_test, c3, up_factor=4*opt.base_up_factor, nrow=4)
+                if a3 is not None:
+                    attn3, __ = visualize_attn(I_test, a3, up_factor=4*opt.base_up_factor, nrow=4)
                     writer.add_image('test/attention_map_3', attn3, epoch)
 
 if __name__ == "__main__":

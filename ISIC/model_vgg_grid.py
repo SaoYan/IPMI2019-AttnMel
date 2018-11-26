@@ -59,12 +59,12 @@ class AttnVGG(nn.Module):
         N, __, __, __ = pool5.size()
         if self.attention:
             g = self.pool(pool5).view(N,512)
-            c1, g1 = self.attn1(pool3, pool5)
-            c2, g2 = self.attn2(pool4, pool5)
+            a1, g1 = self.attn1(pool3, pool5)
+            a2, g2 = self.attn2(pool4, pool5)
             g_hat = torch.cat((g,g1,g2), dim=1) # batch_size x C
             out = self.classify(g_hat)
         else:
             g = self.dense(pool5.view(N,-1))
             out = self.classify(g)
-            c1, c2 = None, None
-        return [out, c1, c2, None]
+            a1, a2 = None, None
+        return [out, a1, a2, None]
