@@ -13,7 +13,7 @@ import torchvision
 import torchvision.utils as utils
 import torchvision.transforms as transforms
 from model_vgg_grid import AttnVGG
-from loss import FocalLoss
+from loss import FocalLoss, DiceLoss
 from data_2017 import preprocess_data, ISIC
 from utilities import *
 
@@ -116,7 +116,7 @@ def main():
         print('\nturn off attention ...\n')
 
     net = AttnVGG(num_classes=2, attention=not opt.no_attention, normalize_attn=opt.normalize_attn)
-
+    dice = DiceLoss()
     if opt.focal_loss:
         print('\nuse focal loss ...\n')
         criterion = FocalLoss(gama=2., size_average=True, weight=None)
@@ -129,6 +129,7 @@ def main():
     print('\nmoving models to GPU ...\n')
     model = nn.DataParallel(net, device_ids=device_ids).to(device)
     criterion.to(device)
+    dice.to(device)
     print('\ndone\n')
 
     # optimizer
@@ -139,7 +140,7 @@ def main():
     # training
     print('\nstart training ...\n')
     step = 0
-    running_avg_accuracy = 0
+    EMA_accuracy = 0
     writer = SummaryWriter(opt.outf)
     for epoch in range(opt.epochs):
         images_disp = []
@@ -157,13 +158,21 @@ def main():
                 optimizer.zero_grad()
                 inputs, seg, labels = data
                 inputs = (inputs - Mean.view(1,3,1,1)) / Std.view(1,3,1,1)
-                inputs, labels = inputs.to(device), labels.to(device)
+                seg = seg[:,-1:,:,:]
+                seg_1 = F.adaptive_avg_pool2d(seg, im_size//opt.base_up_factor)
+                seg_2 = F.adaptive_avg_pool2d(seg, im_size//opt.base_up_factor//2)
+                inputs, seg_1, seg_2, labels = inputs.to(device), seg_1.to(device), seg_2.to(device), labels.to(device)
                 if (aug == 0) and (i == 0): # archive images in order to save to logs
                     images_disp.append(inputs[0:16,:,:,:])
+                    images_disp.append(seg_1[0:16,:,:,:])
+                    images_disp.append(seg_2[0:16,:,:,:])
                 # forward
-                pred, __, __, __ = model.forward(inputs)
+                pred, a1, a2, __ = model.forward(inputs)
                 # backward
-                loss = criterion(pred, labels)
+                loss_c = criterion(pred, labels)
+                loss_seg1 = 0.01 * dice(a1, seg_1)
+                loss_seg2 = 0.1 * dice(a2, seg_2)
+                loss = loss_c + loss_seg1 + loss_seg2
                 loss.backward()
                 optimizer.step()
                 # display results
@@ -174,12 +183,14 @@ def main():
                     total = labels.size(0)
                     correct = torch.eq(predict, labels).sum().double().item()
                     accuracy = correct / total
-                    running_avg_accuracy = 0.98*running_avg_accuracy + 0.02*accuracy
-                    writer.add_scalar('train/loss', loss.item(), step)
+                    EMA_accuracy = 0.98*EMA_accuracy + 0.02*accuracy
+                    writer.add_scalar('train/loss_c', loss_c.item(), step)
+                    writer.add_scalar('train/loss_seg1', loss_seg1.item(), step)
+                    writer.add_scalar('train/loss_seg2', loss_seg2.item(), step)
                     writer.add_scalar('train/accuracy', accuracy, step)
-                    writer.add_scalar('train/running_avg_accuracy', running_avg_accuracy, step)
-                    print("[epoch %d][aug %d/%d][%d/%d] loss %.4f accuracy %.2f%% running avg accuracy %.2f%%"
-                        % (epoch, aug, num_aug-1, i, len(trainloader)-1, loss.item(), (100*accuracy), (100*running_avg_accuracy)))
+                    writer.add_scalar('train/EMA_accuracy', EMA_accuracy, step)
+                    print("[epoch %d][aug %d/%d][%d/%d] loss_c %.4f loss_seg1 %.4f loss_seg2 %.4f accuracy %.2f%% EMA %.2f%%"
+                        % (epoch, aug, num_aug-1, i, len(trainloader)-1, loss.item(), loss_seg1.item(), loss_seg2.item(), (100*accuracy), (100*EMA_accuracy)))
                 step += 1
         # the end of each epoch
         model.eval()
@@ -199,7 +210,7 @@ def main():
             with open('test_results.csv', 'wt', newline='') as csv_file:
                 csv_writer = csv.writer(csv_file, delimiter=',')
                 for i, data in enumerate(testloader, 0):
-                    images_test, seg_test, labels_test = data
+                    images_test, __, labels_test = data
                     images_test = (images_test - Mean.view(1,3,1,1)) / Std.view(1,3,1,1)
                     images_test, labels_test = images_test.to(device), labels_test.to(device)
                     if i == 0: # archive images in order to save to logs
@@ -230,46 +241,46 @@ def main():
             if opt.log_images:
                 print('\nlog images ...\n')
                 I_train = utils.make_grid(images_disp[0], nrow=4, normalize=True, scale_each=True)
+                I_seg_1 = utils.make_grid(images_disp[1], nrow=4, normalize=True, scale_each=True)
+                I_seg_2 = utils.make_grid(images_disp[2], nrow=4, normalize=True, scale_each=True)
                 writer.add_image('train/image', I_train, epoch)
+                writer.add_image('train/seg1', I_seg_1, epoch)
+                writer.add_image('train/seg2', I_seg_2, epoch)
                 if epoch == 0:
-                    I_test = utils.make_grid(images_disp[1], nrow=4, normalize=True, scale_each=True)
+                    I_test = utils.make_grid(images_disp[3], nrow=4, normalize=True, scale_each=True)
                     writer.add_image('test/image', I_test, epoch)
             if opt.log_images and (not opt.no_attention):
                 print('\nlog attention maps ...\n')
-                if opt.normalize_attn:
-                    vis_fun = visualize_attn_softmax
-                else:
-                    vis_fun = visualize_attn_sigmoid
                 # training data
-                __, c1, c2, c3 = model.forward(images_disp[0])
-                if c1 is not None:
-                    attn1, stat = vis_fun(I_train, c1, up_factor=opt.base_up_factor, nrow=4)
+                __, a1, a2, a3 = model.forward(images_disp[0])
+                if a1 is not None:
+                    attn1, stat = visualize_attn(I_train, a1, up_factor=opt.base_up_factor, nrow=4)
                     writer.add_image('train/attention_map_1', attn1, epoch)
-                    writer.add_scalar('train_c1/max', stat[0], epoch)
-                    writer.add_scalar('train_c1/min', stat[1], epoch)
-                    writer.add_scalar('train_c1/mean', stat[2], epoch)
-                if c2 is not None:
-                    attn2, stat = vis_fun(I_train, c2, up_factor=2*opt.base_up_factor, nrow=4)
+                    writer.add_scalar('train_a1/max', stat[0], epoch)
+                    writer.add_scalar('train_a1/min', stat[1], epoch)
+                    writer.add_scalar('train_a1/mean', stat[2], epoch)
+                if a2 is not None:
+                    attn2, stat = visualize_attn(I_train, a2, up_factor=2*opt.base_up_factor, nrow=4)
                     writer.add_image('train/attention_map_2', attn2, epoch)
-                    writer.add_scalar('train_c2/max', stat[0], epoch)
-                    writer.add_scalar('train_c2/min', stat[1], epoch)
-                    writer.add_scalar('train_c2/mean', stat[2], epoch)
-                if c3 is not None:
-                    attn3, stat = vis_fun(I_train, c3, up_factor=4*opt.base_up_factor, nrow=4)
+                    writer.add_scalar('train_a2/max', stat[0], epoch)
+                    writer.add_scalar('train_a2/min', stat[1], epoch)
+                    writer.add_scalar('train_a2/mean', stat[2], epoch)
+                if a3 is not None:
+                    attn3, stat = visualize_attn(I_train, a3, up_factor=4*opt.base_up_factor, nrow=4)
                     writer.add_image('train/attention_map_3', attn3, epoch)
-                    writer.add_scalar('train_c3/max', stat[0], epoch)
-                    writer.add_scalar('train_c3/min', stat[1], epoch)
-                    writer.add_scalar('train_c3/mean', stat[2], epoch)
+                    writer.add_scalar('train_a3/max', stat[0], epoch)
+                    writer.add_scalar('train_a3/min', stat[1], epoch)
+                    writer.add_scalar('train_a3/mean', stat[2], epoch)
                 # test data
-                __, c1, c2, c3 = model.forward(images_disp[1])
-                if c1 is not None:
-                    attn1, __ = vis_fun(I_test, c1, up_factor=opt.base_up_factor, nrow=4)
+                __, a1, a2, a3 = model.forward(images_disp[3])
+                if a1 is not None:
+                    attn1, __ = visualize_attn(I_test, a1, up_factor=opt.base_up_factor, nrow=4)
                     writer.add_image('test/attention_map_1', attn1, epoch)
-                if c2 is not None:
-                    attn2, __ = vis_fun(I_test, c2, up_factor=2*opt.base_up_factor, nrow=4)
+                if a2 is not None:
+                    attn2, __ = visualize_attn(I_test, a2, up_factor=2*opt.base_up_factor, nrow=4)
                     writer.add_image('test/attention_map_2', attn2, epoch)
-                if c3 is not None:
-                    attn3, __ = vis_fun(I_test, c3, up_factor=4*opt.base_up_factor, nrow=4)
+                if a3 is not None:
+                    attn3, __ = visualize_attn(I_test, a3, up_factor=4*opt.base_up_factor, nrow=4)
                     writer.add_image('test/attention_map_3', attn3, epoch)
 
 if __name__ == "__main__":

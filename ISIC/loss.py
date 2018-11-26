@@ -2,26 +2,6 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
-# class FocalLoss(nn.Module):
-#     def __init__(self, gama=2., size_average=True):
-#         super(FocalLoss, self).__init__()
-#         self.gama = gama
-#         self.size_average = size_average
-#     def forward(self, inputs, targets):
-#         '''
-#         inputs: size(N,C), float tensor
-#         targets: size(N,C), one-hot, float tensor
-#         '''
-#         N, C = inputs.size()
-#         P = F.softmax(inputs, dim=1).mul(targets).sum(dim=1) # (N)
-#         log_P = F.log_softmax(inputs, dim=1).mul(targets).sum(dim=1) # (N)
-#         batch_loss = -torch.pow(1-P, self.gama).mul(log_P)
-#         if self.size_average:
-#             loss = batch_loss.mean()
-#         else:
-#             loss = batch_loss.sum()
-#         return loss
-
 class FocalLoss(nn.Module):
     def __init__(self, gama=2., size_average=True, weight=None):
         super(FocalLoss, self).__init__()
@@ -44,3 +24,12 @@ class FocalLoss(nn.Module):
         else:
             loss = batch_loss.sum()
         return loss
+
+class DiceLoss(nn.Module):
+    def __init__(self):
+        super(DiceLoss, self).__init__()
+    def forward(self, inputs, targets):
+        mul = torch.mul(inputs, targets)
+        add = torch.add(inputs, 1, targets)
+        dice = 2 * torch.div(mul.sum(), add.sum())
+        return 1 - dice
