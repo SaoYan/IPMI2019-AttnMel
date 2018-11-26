@@ -13,6 +13,14 @@ from model_vgg_grid import AttnVGG
 from utilities import *
 from data_2017 import preprocess_data, ISIC
 
+'''
+switch between ISIC 2016 and 2017
+modify the following contents:
+1. import
+2. root_dir of preprocess_data
+3. mean and std of transforms.Normalize
+'''
+
 os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"
 os.environ["CUDA_VISIBLE_DEVICES"] = "0,1"
 

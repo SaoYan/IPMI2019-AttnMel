@@ -49,7 +49,7 @@ def compute_metrics(result_file):
     # groundtruth
     with open('test.csv', 'r', newline='') as csv_file:
         reader = csv.reader(csv_file, delimiter=',')
-        gt = [int(row[1]) for row in reader]
+        gt = [int(row[2]) for row in reader]
     # prediction
     pred = []
     i = 0
@@ -84,7 +84,7 @@ def compute_mean_pecision_recall(result_file, threshold=0.5):
     # groundtruth
     with open('test.csv', 'r', newline='') as csv_file:
         reader = csv.reader(csv_file, delimiter=',')
-        gt = [int(row[1]) for row in reader]
+        gt = [int(row[2]) for row in reader]
     # prediction
     pred = []
     with open(result_file, 'r', newline='') as csv_file:

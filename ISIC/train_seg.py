@@ -155,7 +155,7 @@ def main():
                 model.train()
                 model.zero_grad()
                 optimizer.zero_grad()
-                inputs, __, labels = data
+                inputs, seg, labels = data
                 inputs = (inputs - Mean.view(1,3,1,1)) / Std.view(1,3,1,1)
                 inputs, labels = inputs.to(device), labels.to(device)
                 if (aug == 0) and (i == 0): # archive images in order to save to logs
@@ -199,7 +199,7 @@ def main():
             with open('test_results.csv', 'wt', newline='') as csv_file:
                 csv_writer = csv.writer(csv_file, delimiter=',')
                 for i, data in enumerate(testloader, 0):
-                    images_test, __, labels_test = data
+                    images_test, seg_test, labels_test = data
                     images_test = (images_test - Mean.view(1,3,1,1)) / Std.view(1,3,1,1)
                     images_test, labels_test = images_test.to(device), labels_test.to(device)
                     if i == 0: # archive images in order to save to logs
