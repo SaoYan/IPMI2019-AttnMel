@@ -139,7 +139,7 @@ def main():
     # training
     print('\nstart training ...\n')
     step = 0
-    running_avg_accuracy = 0
+    EMA_accuracy = 0
     writer = SummaryWriter(opt.outf)
     for epoch in range(opt.epochs):
         images_disp = []
@@ -174,12 +174,12 @@ def main():
                     total = labels.size(0)
                     correct = torch.eq(predict, labels).sum().double().item()
                     accuracy = correct / total
-                    running_avg_accuracy = 0.98*running_avg_accuracy + 0.02*accuracy
+                    EMA_accuracy = 0.98*EMA_accuracy + 0.02*accuracy
                     writer.add_scalar('train/loss', loss.item(), step)
                     writer.add_scalar('train/accuracy', accuracy, step)
-                    writer.add_scalar('train/running_avg_accuracy', running_avg_accuracy, step)
-                    print("[epoch %d][aug %d/%d][%d/%d] loss %.4f accuracy %.2f%% running avg accuracy %.2f%%"
-                        % (epoch, aug, num_aug-1, i, len(trainloader)-1, loss.item(), (100*accuracy), (100*running_avg_accuracy)))
+                    writer.add_scalar('train/EMA_accuracy', EMA_accuracy, step)
+                    print("[epoch %d][aug %d/%d][%d/%d] loss %.4f accuracy %.2f%% EMA_accuracy %.2f%%"
+                        % (epoch, aug, num_aug-1, i, len(trainloader)-1, loss.item(), (100*accuracy), (100*EMA_accuracy)))
                 step += 1
         # the end of each epoch
         model.eval()
