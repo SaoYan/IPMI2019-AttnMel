@@ -175,7 +175,7 @@ def main():
                     correct = torch.eq(predict, labels).sum().double().item()
                     accuracy = correct / total
                     EMA_accuracy = 0.98*EMA_accuracy + 0.02*accuracy
-                    writer.add_scalar('train/loss', loss.item(), step)
+                    writer.add_scalar('train/loss_c', loss.item(), step)
                     writer.add_scalar('train/accuracy', accuracy, step)
                     writer.add_scalar('train/EMA_accuracy', EMA_accuracy, step)
                     print("[epoch %d][aug %d/%d][%d/%d] loss %.4f accuracy %.2f%% EMA_accuracy %.2f%%"
