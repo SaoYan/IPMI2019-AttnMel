@@ -9,7 +9,7 @@ import torch.nn.functional as F
 import torchvision
 import torchvision.utils as utils
 import torchvision.transforms as transforms
-from model_vgg_grid import AttnVGG
+from networks import AttnVGG
 from utilities import *
 from data_2017 import preprocess_data, ISIC
 

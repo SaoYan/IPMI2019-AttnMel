@@ -12,7 +12,7 @@ import torch.optim.lr_scheduler as lr_scheduler
 import torchvision
 import torchvision.utils as utils
 import torchvision.transforms as transforms
-from model_vgg_grid import AttnVGG
+from networks import AttnVGG
 from loss import FocalLoss
 from data_2017 import preprocess_data, ISIC
 from utilities import *
@@ -81,7 +81,10 @@ def main():
         transform=transform_test, transform_seg=transform_test)
     testloader = torch.utils.data.DataLoader(testset, batch_size=64, shuffle=False, num_workers=8)
 
-    # ISIC 2017: mean & std of the dataset
+    # ISIC 2017 (full crop): mean & std of the dataset
+    # Mean = torch.from_numpy(np.array([0.7061, 0.5725, 0.5200]).astype(np.float32))
+    # Std  = torch.from_numpy(np.array([0.0810, 0.1101, 0.1256]).astype(np.float32))
+    # ISIC 2017 (0.8 crop): mean & std of the dataset
     Mean = torch.from_numpy(np.array([0.6900, 0.5442, 0.4865]).astype(np.float32))
     Std  = torch.from_numpy(np.array([0.0810, 0.1118, 0.1265]).astype(np.float32))
     # ISIC 2016: mean & std of the dataset
