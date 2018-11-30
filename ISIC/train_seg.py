@@ -170,9 +170,9 @@ def main():
                 pred, a1, a2, __ = model.forward(inputs)
                 # backward
                 loss_c = criterion(pred, labels)
-                loss_seg1 = 0.01 * dice(a1, seg_1)
-                loss_seg2 = 0.1 * dice(a2, seg_2)
-                loss = loss_c + loss_seg1 + loss_seg2
+                loss_seg1 = dice(a1, seg_1)
+                loss_seg2 = dice(a2, seg_2)
+                loss = loss_c + 0.01 * loss_seg1 + 0.1 * loss_seg2
                 loss.backward()
                 optimizer.step()
                 # display results
