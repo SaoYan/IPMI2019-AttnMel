@@ -15,18 +15,9 @@ class ConvBlock(nn.Module):
     def forward(self, x):
         return self.op(x)
 
-'''
-Grid attention block
-
-Reference papers
-Attention-Gated Networks https://arxiv.org/abs/1804.05338 & https://arxiv.org/abs/1808.08114
-
-Reference code
-https://github.com/ozan-oktay/Attention-Gated-Networks
-'''
-class GridAttentionBlock(nn.Module):
+class AttentionBlock(nn.Module):
     def __init__(self, in_features_l, in_features_g, attn_features, up_factor, normalize_attn=True):
-        super(GridAttentionBlock, self).__init__()
+        super(AttentionBlock, self).__init__()
         self.up_factor = up_factor
         self.normalize_attn = normalize_attn
         self.W_l = nn.Conv2d(in_channels=in_features_l, out_channels=attn_features, kernel_size=1, padding=0, bias=False)
@@ -49,5 +40,5 @@ class GridAttentionBlock(nn.Module):
         if self.normalize_attn:
             output = f.view(N,C,-1).sum(dim=2) # weighted sum
         else:
-            output = F.adaptive_avg_pool2d(f, (1,1)).view(N,C)
+            output = F.adaptive_avg_pool2d(f, (1,1)).view(N,C) # global average pooling
         return a, output

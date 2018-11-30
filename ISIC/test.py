@@ -22,12 +22,12 @@ modify the following contents:
 '''
 
 os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"
-os.environ["CUDA_VISIBLE_DEVICES"] = "0,1"
+os.environ["CUDA_VISIBLE_DEVICES"] = "0"
 
 torch.backends.cudnn.benchmark = True
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-device_ids = [0,1]
+device_ids = [0]
 
 parser = argparse.ArgumentParser(description="Attn-SKin-test")
 
@@ -47,14 +47,19 @@ def main():
     print('\nloading the dataset ...\n')
     im_size = 224
     transform_test = transforms.Compose([
-        transforms.Resize((256,256)),
         transforms.CenterCrop(im_size),
-        transforms.ToTensor(),
-        # transforms.Normalize((0.7105, 0.5646, 0.4978), (0.0911, 0.1309, 0.1513)) # ISIC 2016
-        transforms.Normalize((0.6916, 0.5459, 0.4865), (0.0834, 0.1164, 0.1322)) # ISIC 2017
+        transforms.ToTensor()
     ])
-    testset = ISIC(csv_file='test.csv', shuffle=False, rotate=False, transform=transform_test)
+    testset = ISIC(csv_file='test.csv', shuffle=False, resize=(256,256), randcrop=None, rotate=False, flip=False,
+        transform=transform_test, transform_seg=transform_test)
     testloader = torch.utils.data.DataLoader(testset, batch_size=64, shuffle=False, num_workers=8)
+
+    # ISIC 2017: mean & std of the dataset
+    Mean = torch.from_numpy(np.array([0.6900, 0.5442, 0.4865]).astype(np.float32))
+    Std  = torch.from_numpy(np.array([0.0810, 0.1118, 0.1265]).astype(np.float32))
+    # ISIC 2016: mean & std of the dataset
+    # Mean = torch.from_numpy(np.array([0.7105, 0.5646, 0.4978]).astype(np.float32))
+    # Std  = torch.from_numpy(np.array([0.0910, 0.1310, 0.1510]).astype(np.float32))
     print('done')
 
     # load network
@@ -69,7 +74,7 @@ def main():
         print('\nturn off attention ...\n')
 
     net = AttnVGG(num_classes=2, attention=not opt.no_attention, normalize_attn=opt.normalize_attn)
-    checkpoint = torch.load(checkpoint.pth)
+    checkpoint = torch.load('checkpoint.tar')
     net.load_state_dict(checkpoint['state_dict'])
     model = nn.DataParallel(net, device_ids=device_ids).to(device)
     model.eval()
@@ -84,7 +89,8 @@ def main():
         with open('test_results.csv', 'wt', newline='') as csv_file:
             csv_writer = csv.writer(csv_file, delimiter=',')
             for i, data in enumerate(testloader, 0):
-                images_test, labels_test = data
+                images_test, __, labels_test = data
+                images_test = (images_test - Mean.view(1,3,1,1)) / Std.view(1,3,1,1)
                 images_test, labels_test = images_test.to(device), labels_test.to(device)
                 pred_test, __, __, __ = model.forward(images_test)
                 predict = torch.argmax(pred_test, 1)
@@ -95,26 +101,20 @@ def main():
                 responses = [responses[i] for i in range(responses.shape[0])]
                 csv_writer.writerows(responses)
                 # log images
-                idx = torch.eq(predict, labels_test).nonzero().cpu().numpy().squeeze(1)
-                images_disp = images_test[idx,:,:,:]
                 if opt.log_images:
-                    I_test = utils.make_grid(images_disp, nrow=8, normalize=True, scale_each=True)
+                    I_test = utils.make_grid(images_test, nrow=8, normalize=True, scale_each=True)
                     writer.add_image('test/image', I_test, i)
                     # accention maps
                     if not opt.no_attention:
-                        if opt.normalize_attn:
-                            vis_fun = visualize_attn_softmax
-                        else:
-                            vis_fun = visualize_attn_sigmoid
-                        __, c1, c2, c3 = model.forward(images_disp)
-                        if c1 is not None:
-                            attn1, __ = vis_fun(I_test, c1, up_factor=opt.base_up_factor, nrow=8)
+                        __, a1, a2, a3 = model.forward(images_test)
+                        if a1 is not None:
+                            attn1, __ = visualize_attn(I_test, a1, up_factor=opt.base_up_factor, nrow=8)
                             writer.add_image('test/attention_map_1', attn1, i)
-                        if c2 is not None:
-                            attn2, __ = vis_fun(I_test, c2, up_factor=2*opt.base_up_factor, nrow=8)
+                        if a2 is not None:
+                            attn2, __ = visualize_attn(I_test, a2, up_factor=2*opt.base_up_factor, nrow=8)
                             writer.add_image('test/attention_map_2', attn2, i)
-                        if c3 is not None:
-                            attn3, __ = vis_fun(I_test, c3, up_factor=4*opt.base_up_factor, nrow=8)
+                        if a3 is not None:
+                            attn3, __ = visualize_attn(I_test, a3, up_factor=4*opt.base_up_factor, nrow=8)
                             writer.add_image('test/attention_map_3', attn3, i)
     precision, recall, precision_mel, recall_mel = compute_mean_pecision_recall('test_results.csv')
     mAP, AUC, __ = compute_metrics('test_results.csv')

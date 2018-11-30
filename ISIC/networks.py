@@ -1,7 +1,7 @@
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-from blocks import GridAttentionBlock
+from blocks import AttentionBlock
 import torchvision.models as models
 
 '''
@@ -22,8 +22,8 @@ class AttnVGG(nn.Module):
         self.conv_block5 = nn.Sequential(*list(net.features.children())[34:43])
         if self.attention:
             self.pool = nn.AvgPool2d(7, stride=1)
-            self.attn1 = GridAttentionBlock(256, 512, 256, 4, normalize_attn=normalize_attn)
-            self.attn2 = GridAttentionBlock(512, 512, 256, 2, normalize_attn=normalize_attn)
+            self.attn1 = AttentionBlock(256, 512, 256, 4, normalize_attn=normalize_attn)
+            self.attn2 = AttentionBlock(512, 512, 256, 2, normalize_attn=normalize_attn)
             self.classify = nn.Linear(in_features=512+512+256, out_features=num_classes, bias=True)
         else:
             self.dense = nn.Sequential(*list(net.classifier.children())[:-1])

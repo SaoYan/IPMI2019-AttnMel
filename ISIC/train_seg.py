@@ -27,12 +27,12 @@ modify the following contents:
 '''
 
 os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"
-os.environ["CUDA_VISIBLE_DEVICES"] = "0,1"
+os.environ["CUDA_VISIBLE_DEVICES"] = "0"
 
 torch.backends.cudnn.benchmark = True
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-device_ids = [0,1]
+device_ids = [0]
 
 parser = argparse.ArgumentParser(description="Attn-Skin-train")
 

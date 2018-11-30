@@ -27,12 +27,12 @@ modify the following contents:
 '''
 
 os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"
-os.environ["CUDA_VISIBLE_DEVICES"] = "0,1"
+os.environ["CUDA_VISIBLE_DEVICES"] = "0"
 
 torch.backends.cudnn.benchmark = True
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-device_ids = [0,1]
+device_ids = [0]
 
 parser = argparse.ArgumentParser(description="Attn-Skin-train")
 
@@ -81,10 +81,7 @@ def main():
         transform=transform_test, transform_seg=transform_test)
     testloader = torch.utils.data.DataLoader(testset, batch_size=64, shuffle=False, num_workers=8)
 
-    # ISIC 2017 (full crop): mean & std of the dataset
-    # Mean = torch.from_numpy(np.array([0.7061, 0.5725, 0.5200]).astype(np.float32))
-    # Std  = torch.from_numpy(np.array([0.0810, 0.1101, 0.1256]).astype(np.float32))
-    # ISIC 2017 (0.8 crop): mean & std of the dataset
+    # ISIC 2017: mean & std of the dataset
     Mean = torch.from_numpy(np.array([0.6900, 0.5442, 0.4865]).astype(np.float32))
     Std  = torch.from_numpy(np.array([0.0810, 0.1118, 0.1265]).astype(np.float32))
     # ISIC 2016: mean & std of the dataset
@@ -192,9 +189,9 @@ def main():
             'state_dict': model.module.state_dict(),
             'opt_state_dict': optimizer.state_dict(),
         }
-        torch.save(checkpoint, os.path.join(opt.outf,'checkpoint.pth'))
+        torch.save(checkpoint, os.path.join(opt.outf,'checkpoint.tar'))
         if epoch == opt.epochs / 2:
-            torch.save(checkpoint, os.path.join(opt.outf, 'checkpoint_%d.pth' % epoch))
+            torch.save(checkpoint, os.path.join(opt.outf, 'checkpoint_%d.tar' % epoch))
         # log test results
         total = 0
         correct = 0
