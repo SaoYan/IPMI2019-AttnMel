@@ -124,5 +124,5 @@ def main():
 
 if __name__ == "__main__":
     if opt.preprocess:
-        preprocess_data(root_dir='data_2016')
+        preprocess_data(root_dir='../data_2017')
     main()
