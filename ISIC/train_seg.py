@@ -200,9 +200,9 @@ def main():
             'state_dict': model.module.state_dict(),
             'opt_state_dict': optimizer.state_dict(),
         }
-        torch.save(checkpoint, os.path.join(opt.outf,'checkpoint.pth'))
+        torch.save(checkpoint, os.path.join(opt.outf,'checkpoint.rar'))
         if epoch == opt.epochs / 2:
-            torch.save(checkpoint, os.path.join(opt.outf, 'checkpoint_%d.pth' % epoch))
+            torch.save(checkpoint, os.path.join(opt.outf, 'checkpoint_%d.rar' % epoch))
         # log test results
         total = 0
         correct = 0
