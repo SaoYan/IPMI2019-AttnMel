@@ -25,7 +25,8 @@ def visualize_attn(I, a, up_factor, nrow):
     attn = np.float32(attn) / 255
     # add the heatmap to the image
     vis = 0.4 * img + 0.6 * attn
-    return torch.from_numpy(vis).permute(2,0,1), [torch.max(a).item(),torch.min(a).item(),torch.mean(a).item()]
+    # vis = attn
+    return torch.from_numpy(vis).permute(2,0,1), a, [torch.max(a).item(),torch.min(a).item(),torch.mean(a).item()]
 
 def compute_metrics(result_file):
     # groundtruth
@@ -80,3 +81,44 @@ def compute_mean_pecision_recall(result_file, threshold=0.5):
     precision_mel  = precision_score(gt, pred, average='binary', pos_label=1)
     recall_mel = recall_score(gt, pred, average='binary', pos_label=1)
     return precision, recall, precision_mel, recall_mel
+
+def jaccard_similarity_coefficient(A, B, no_positives=1.0, error_check=False):
+    """Returns the jaccard index/similarity coefficient between A and B.
+
+    This should work for arrays of any dimensions.
+
+    J = len(intersection(A,B)) / len(union(A,B))
+
+    To extend to probabilistic input, to compute the intersection, use the min(A,B).
+    To compute the union, use max(A,B).
+
+    Assumes that a value of 1 indicates the positive values.
+    A value of 0 indicates the negative values.
+
+    If no positive values (1) in either A or B, then returns `no_positives`.
+
+    """
+    # Make sure the shapes are the same.
+    if not A.shape == B.shape:
+        raise ValueError("A and B must be the same shape")
+
+    if error_check:
+        # Make sure values are between 0 and 1.
+        if np.any((A > 1.) | (A < 0) | (B > 1.) | (B < 0)):
+            raise ValueError("A and B must be between 0 and 1")
+
+    # Flatten to handle nd arrays.
+    A = A.flatten()
+    B = B.flatten()
+
+    intersect = np.minimum(A, B)
+    union = np.maximum(A, B)
+
+    union_sum = union.sum()
+    # Special case if neither A or B have a 1 value.
+    if union_sum == 0:
+        return no_positives
+
+    # Compute the Jaccard.
+    J = float(intersect.sum()) / union_sum
+    return J

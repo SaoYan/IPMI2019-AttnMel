@@ -15,6 +15,8 @@ from data_2017 import preprocess_data, ISIC
 from utilities import *
 from transforms import *
 
+import matplotlib.pyplot as plt
+
 '''
 switch between ISIC 2016 and 2017
 modify the following contents:
@@ -44,6 +46,13 @@ parser.add_argument("--log_images", action='store_true', help='log images')
 
 opt = parser.parse_args()
 
+def compute_mask_from_attn(map):
+    min_val = torch.min(map)
+    max_val = torch.max(map)
+    map_renorm = (map - min_val) / (max_val - min_val)
+    mask = map_renorm.ge(0.5).to(torch.float32)
+    return mask
+
 def main():
     # load data
     print('\nloading the dataset ...\n')
@@ -56,7 +65,7 @@ def main():
          # Normalize((0.7012, 0.5517, 0.4875), (0.0942, 0.1331, 0.1521)) # ISIC 2016
     ])
     testset = ISIC(csv_file='test.csv', shuffle=False, transform=transform_test)
-    testloader = torch.utils.data.DataLoader(testset, batch_size=64, shuffle=False, num_workers=8)
+    testloader = torch.utils.data.DataLoader(testset, batch_size=1, shuffle=False, num_workers=8)
     print('done')
 
     # load network
@@ -71,7 +80,7 @@ def main():
         print('\nturn off attention ...\n')
 
     net = AttnVGG(num_classes=2, attention=not opt.no_attention, normalize_attn=opt.normalize_attn)
-    checkpoint = torch.load('checkpoint.pth')
+    checkpoint = torch.load('checkpoint_dermo.pth')
     net.load_state_dict(checkpoint['state_dict'])
     model = nn.DataParallel(net, device_ids=device_ids).to(device)
     model.eval()
@@ -82,11 +91,13 @@ def main():
     writer = SummaryWriter(opt.outf)
     total = 0
     correct = 0
+    J_a1 = 0.; J_a2 = 0.
     with torch.no_grad():
         with open('test_results.csv', 'wt', newline='') as csv_file:
             csv_writer = csv.writer(csv_file, delimiter=',')
             for i, data in enumerate(testloader, 0):
-                images_test, labels_test = data['image'], data['label']
+                images_test, seg_test, labels_test = data['image'], data['image_seg'], data['label']
+                seg_test = seg_test[:,-1:,:,:]
                 images_test, labels_test = images_test.to(device), labels_test.to(device)
                 pred_test, __, __ = model.forward(images_test)
                 predict = torch.argmax(pred_test, 1)
@@ -95,25 +106,34 @@ def main():
                 # record test predicted responses
                 responses = F.softmax(pred_test, dim=1).squeeze().cpu().numpy()
                 responses = [responses[i] for i in range(responses.shape[0])]
-                csv_writer.writerows(responses)
+                csv_writer.writerow(responses)
                 # log images
                 if opt.log_images:
-                    I_test = utils.make_grid(images_test, nrow=8, normalize=True, scale_each=True)
+                    I_test = utils.make_grid(images_test, nrow=1, normalize=True, scale_each=True)
+                    Seg_test = utils.make_grid(seg_test, nrow=1, normalize=False)
                     writer.add_image('test/image', I_test, i)
+                    writer.add_image('test/seg', Seg_test, i)
                     # accention maps
                     if not opt.no_attention:
                         __, a1, a2 = model.forward(images_test)
                         if a1 is not None:
-                            attn1, __ = visualize_attn(I_test, a1, up_factor=opt.base_up_factor, nrow=8)
+                            attn1, map1, __ = visualize_attn(I_test, a1, up_factor=opt.base_up_factor, nrow=1)
+                            mask1 = compute_mask_from_attn(map1)
+                            J_a1 += jaccard_similarity_coefficient(mask1.to('cpu').numpy(), seg_test.numpy())
+                            writer.add_image('test/seg_1', utils.make_grid(mask1, nrow=1, normalize=True, scale_each=True), i)
                             writer.add_image('test/attention_map_1', attn1, i)
                         if a2 is not None:
-                            attn2, __ = visualize_attn(I_test, a2, up_factor=2*opt.base_up_factor, nrow=8)
+                            attn2, map2, __ = visualize_attn(I_test, a2, up_factor=2*opt.base_up_factor, nrow=1)
+                            mask2 = compute_mask_from_attn(map2)
+                            J_a2 += jaccard_similarity_coefficient(mask2.to('cpu').numpy(), seg_test.numpy())
+                            writer.add_image('test/seg_2', utils.make_grid(mask2, nrow=1, normalize=True, scale_each=True), i)
                             writer.add_image('test/attention_map_2', attn2, i)
     precision, recall, precision_mel, recall_mel = compute_mean_pecision_recall('test_results.csv')
     mAP, AUC, __ = compute_metrics('test_results.csv')
     print("\ntest result: accuracy %.2f%% \nmean precision %.2f%% mean recall %.2f%% \
             \nprecision for mel %.2f%% recall for mel %.2f%% \nmAP %.2f%% AUC %.4f\n" %
             (100*correct/total, 100*precision, 100*recall, 100*precision_mel, 100*recall_mel, 100*mAP, AUC))
+    print([J_a1/len(testloader), J_a2/len(testloader)])
 
 if __name__ == "__main__":
     if opt.preprocess:

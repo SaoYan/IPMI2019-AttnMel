@@ -11,11 +11,12 @@ import torch.optim as optim
 import torch.optim.lr_scheduler as lr_scheduler
 import torchvision
 import torchvision.utils as utils
-import torchvision.transforms as transforms
-from networks import AttnVGG
+import torchvision.transforms as torch_transforms
+from networks import AttnVGG, VGG
 from loss import FocalLoss, DiceLoss
 from data_2017 import preprocess_data, ISIC
 from utilities import *
+from transforms import *
 
 '''
 switch between ISIC 2016 and 2017
@@ -70,23 +71,30 @@ def main():
         num_aug = 8
         train_file = 'train.csv'
     im_size = 224
-    transform_test = transforms.Compose([
-        transforms.CenterCrop(im_size),
-        transforms.ToTensor()
+    transform_train = torch_transforms.Compose([
+         RatioCenterCrop(0.8),
+         Resize((256,256)),
+         RandomCrop((224,224)),
+         RandomRotate(),
+         RandomHorizontalFlip(),
+         RandomVerticalFlip(),
+         ToTensor(),
+         Normalize((0.6820, 0.5312, 0.4736), (0.0840, 0.1140, 0.1282)) # ISIC 2017
+         # Normalize((0.7012, 0.5517, 0.4875), (0.0942, 0.1331, 0.1521)) # ISIC 2016
     ])
-    trainset = ISIC(csv_file=train_file, shuffle=True, resize=(256,256), randcrop=(im_size,im_size), rotate=True, flip=True,
-        transform=transforms.ToTensor(), transform_seg=transforms.ToTensor())
+    transform_test = torch_transforms.Compose([
+         RatioCenterCrop(0.8),
+         Resize((256,256)),
+         CenterCrop((224,224)),
+         ToTensor(),
+         Normalize((0.6820, 0.5312, 0.4736), (0.0840, 0.1140, 0.1282)) # ISIC 2017
+         # Normalize((0.7012, 0.5517, 0.4875), (0.0942, 0.1331, 0.1521)) # ISIC 2016
+    ])
+    trainset = ISIC(csv_file=train_file, shuffle=True, transform=transform_train)
     trainloader = torch.utils.data.DataLoader(trainset, batch_size=opt.batch_size, shuffle=True, num_workers=8, worker_init_fn=__worker_init_fn__())
-    testset = ISIC(csv_file='test.csv', shuffle=False, resize=(256,256), randcrop=None, rotate=False, flip=False,
-        transform=transform_test, transform_seg=transform_test)
+    testset = ISIC(csv_file='test.csv', shuffle=False, transform=transform_test)
     testloader = torch.utils.data.DataLoader(testset, batch_size=64, shuffle=False, num_workers=8)
-
-    # ISIC 2017: mean & std of the dataset
-    Mean = torch.from_numpy(np.array([0.6900, 0.5442, 0.4865]).astype(np.float32))
-    Std  = torch.from_numpy(np.array([0.0810, 0.1118, 0.1265]).astype(np.float32))
-    # ISIC 2016: mean & std of the dataset
-    # Mean = torch.from_numpy(np.array([0.7105, 0.5646, 0.4978]).astype(np.float32))
-    # Std  = torch.from_numpy(np.array([0.0910, 0.1310, 0.1510]).astype(np.float32))
+    print('\ndone\n')
     '''
     Mean = torch.zeros(3)
     Std = torch.zeros(3)
@@ -101,7 +109,6 @@ def main():
     print('std: '), print(Std.numpy())
     return
     '''
-    print('\ndone\n')
 
     # load models
     print('\nloading the model ...\n')
@@ -143,6 +150,7 @@ def main():
     EMA_accuracy = 0
     writer = SummaryWriter(opt.outf)
     for epoch in range(opt.epochs):
+        torch.cuda.empty_cache()
         images_disp = []
         # adjust learning rate
         scheduler.step()
@@ -156,8 +164,7 @@ def main():
                 model.train()
                 model.zero_grad()
                 optimizer.zero_grad()
-                inputs, seg, labels = data
-                inputs = (inputs - Mean.view(1,3,1,1)) / Std.view(1,3,1,1)
+                inputs, seg, labels = data['image'], data['image_seg'], data['label']
                 seg = seg[:,-1:,:,:]
                 seg_1 = F.adaptive_avg_pool2d(seg, im_size//opt.base_up_factor)
                 seg_2 = F.adaptive_avg_pool2d(seg, im_size//opt.base_up_factor//2)
@@ -167,18 +174,18 @@ def main():
                     images_disp.append(seg_1[0:16,:,:,:])
                     images_disp.append(seg_2[0:16,:,:,:])
                 # forward
-                pred, a1, a2, __ = model.forward(inputs)
+                pred, a1, a2 = model.forward(inputs)
                 # backward
                 loss_c = criterion(pred, labels)
                 loss_seg1 = dice(a1, seg_1)
                 loss_seg2 = dice(a2, seg_2)
-                loss = loss_c + 0.01 * loss_seg1 + 0.1 * loss_seg2
+                loss = loss_c + 0.001 * loss_seg1 + 0.01 * loss_seg2
                 loss.backward()
                 optimizer.step()
                 # display results
                 if i % 10 == 0:
                     model.eval()
-                    pred, __, __, __ = model.forward(inputs)
+                    pred, __, __ = model.forward(inputs)
                     predict = torch.argmax(pred, 1)
                     total = labels.size(0)
                     correct = torch.eq(predict, labels).sum().double().item()
@@ -200,9 +207,7 @@ def main():
             'state_dict': model.module.state_dict(),
             'opt_state_dict': optimizer.state_dict(),
         }
-        torch.save(checkpoint, os.path.join(opt.outf,'checkpoint.rar'))
-        if epoch == opt.epochs / 2:
-            torch.save(checkpoint, os.path.join(opt.outf, 'checkpoint_%d.rar' % epoch))
+        torch.save(checkpoint, os.path.join(opt.outf,'checkpoint.pth'))
         # log test results
         total = 0
         correct = 0
@@ -210,12 +215,11 @@ def main():
             with open('test_results.csv', 'wt', newline='') as csv_file:
                 csv_writer = csv.writer(csv_file, delimiter=',')
                 for i, data in enumerate(testloader, 0):
-                    images_test, __, labels_test = data
-                    images_test = (images_test - Mean.view(1,3,1,1)) / Std.view(1,3,1,1)
+                    images_test, labels_test = data['image'], data['label']
                     images_test, labels_test = images_test.to(device), labels_test.to(device)
                     if i == 0: # archive images in order to save to logs
                         images_disp.append(images_test[0:16,:,:,:])
-                    pred_test, __, __, __ = model.forward(images_test)
+                    pred_test, __, __ = model.forward(images_test)
                     predict = torch.argmax(pred_test, 1)
                     total += labels_test.size(0)
                     correct += torch.eq(predict, labels_test).sum().double().item()
@@ -252,7 +256,7 @@ def main():
             if opt.log_images and (not opt.no_attention):
                 print('\nlog attention maps ...\n')
                 # training data
-                __, a1, a2, a3 = model.forward(images_disp[0])
+                __, a1, a2 = model.forward(images_disp[0])
                 if a1 is not None:
                     attn1, stat = visualize_attn(I_train, a1, up_factor=opt.base_up_factor, nrow=4)
                     writer.add_image('train/attention_map_1', attn1, epoch)
@@ -265,25 +269,18 @@ def main():
                     writer.add_scalar('train_a2/max', stat[0], epoch)
                     writer.add_scalar('train_a2/min', stat[1], epoch)
                     writer.add_scalar('train_a2/mean', stat[2], epoch)
-                if a3 is not None:
-                    attn3, stat = visualize_attn(I_train, a3, up_factor=4*opt.base_up_factor, nrow=4)
-                    writer.add_image('train/attention_map_3', attn3, epoch)
-                    writer.add_scalar('train_a3/max', stat[0], epoch)
-                    writer.add_scalar('train_a3/min', stat[1], epoch)
-                    writer.add_scalar('train_a3/mean', stat[2], epoch)
                 # test data
-                __, a1, a2, a3 = model.forward(images_disp[3])
+                __, a1, a2 = model.forward(images_disp[3])
                 if a1 is not None:
                     attn1, __ = visualize_attn(I_test, a1, up_factor=opt.base_up_factor, nrow=4)
                     writer.add_image('test/attention_map_1', attn1, epoch)
                 if a2 is not None:
                     attn2, __ = visualize_attn(I_test, a2, up_factor=2*opt.base_up_factor, nrow=4)
                     writer.add_image('test/attention_map_2', attn2, epoch)
-                if a3 is not None:
-                    attn3, __ = visualize_attn(I_test, a3, up_factor=4*opt.base_up_factor, nrow=4)
-                    writer.add_image('test/attention_map_3', attn3, epoch)
 
 if __name__ == "__main__":
     if opt.preprocess:
-        preprocess_data(root_dir='../data_2017')
+        preprocess_data(root_dir='../data_2017', seg_dir='Train_Lesion')
+        # preprocess_data(root_dir='../data_2017', seg_dir='Train_Dermo')
+        # preprocess_data(root_dir='../data_2016')
     main()
