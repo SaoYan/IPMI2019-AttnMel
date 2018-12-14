@@ -90,13 +90,12 @@ def preprocess_data(root_dir):
             writer.writerow([filename] + ['6'])
 
 class ISIC2018(udata.Dataset):
-    def __init__(self, csv_file, shuffle=True, rotate=True, transform=None):
+    def __init__(self, csv_file, shuffle=True, transform=None):
         file = open(csv_file, newline='')
         reader = csv.reader(file, delimiter=',')
         self.pairs = [row for row in reader]
         if shuffle:
             random.shuffle(self.pairs)
-        self.rotate = rotate
         self.transform = transform
     def __len__(self):
         return len(self.pairs)
@@ -104,18 +103,9 @@ class ISIC2018(udata.Dataset):
         pair = self.pairs[idx]
         image = Image.open(pair[0])
         label = int(pair[1])
-        # center crop
-        width, height = image.size
-        new_size = 0.8 * min(width, height)
-        left = (width - new_size)/2
-        top = (height - new_size)/2
-        right = (width + new_size)/2
-        bottom = (height + new_size)/2
-        image = image.crop((left, top, right, bottom))
-        # rotate
-        if self.rotate:
-            idx = random.randint(0,3)
-            image = image.rotate(idx*90)
+        # construct one sample
+        sample = {'image': image, 'image_seg': image, 'label': label}
+        # transform
         if self.transform:
-            image = self.transform(image)
-        return image, label
+            sample = self.transform(sample)
+        return sample
