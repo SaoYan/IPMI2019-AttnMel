@@ -41,6 +41,21 @@ def preprocess_data(root_dir):
                 filename = malignant[k]
                 filename_seg = malignant_seg[k]
                 writer.writerow([filename] + [filename_seg] + ['1'])
+    # val data
+    benign    = glob.glob(os.path.join(root_dir, 'Val', 'benign', '*.jpg')); benign.sort()
+    malignant = glob.glob(os.path.join(root_dir, 'Val', 'malignant', '*.jpg')); malignant.sort()
+    benign_seg    = glob.glob(os.path.join(root_dir, 'Val_Lesion', 'benign', '*.png')); benign_seg.sort()
+    malignant_seg = glob.glob(os.path.join(root_dir, 'Val_Lesion', 'malignant', '*.png')); malignant_seg.sort()
+    with open('val.csv', 'wt', newline='') as csv_file:
+        writer = csv.writer(csv_file, delimiter=',')
+        for k in range(len(benign)):
+            filename = benign[k]
+            filename_seg = benign_seg[k]
+            writer.writerow([filename] + [filename_seg] + ['0'])
+        for k in range(len(malignant)):
+            filename = malignant[k]
+            filename_seg = malignant_seg[k]
+            writer.writerow([filename] + [filename_seg] + ['1'])
     # test data
     benign    = glob.glob(os.path.join(root_dir, 'Test', 'benign', '*.jpg')); benign.sort()
     malignant = glob.glob(os.path.join(root_dir, 'Test', 'malignant', '*.jpg')); malignant.sort()

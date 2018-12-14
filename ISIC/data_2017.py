@@ -53,6 +53,27 @@ def preprocess_data(root_dir, seg_dir='Train_Lesion'):
             filename = sk[k]
             filename_seg = sk_seg[k]
             writer.writerow([filename] + [filename_seg] + ['0'])
+    # val data
+    melanoma = glob.glob(os.path.join(root_dir, 'Val', 'melanoma', '*.jpg')); melanoma.sort()
+    nevus    = glob.glob(os.path.join(root_dir, 'Val', 'nevus', '*.jpg')); nevus.sort()
+    sk       = glob.glob(os.path.join(root_dir, 'Val', 'seborrheic_keratosis', '*.jpg')); sk.sort()
+    melanoma_seg = glob.glob(os.path.join(root_dir, 'Val_Lesion', 'melanoma', '*.png')); melanoma_seg.sort()
+    nevus_seg    = glob.glob(os.path.join(root_dir, 'Val_Lesion', 'nevus', '*.png')); nevus_seg.sort()
+    sk_seg       = glob.glob(os.path.join(root_dir, 'Val_Lesion', 'seborrheic_keratosis', '*.png')); sk_seg.sort()
+    with open('val.csv', 'wt', newline='') as csv_file:
+        writer = csv.writer(csv_file, delimiter=',')
+        for k in range(len(melanoma)):
+            filename = melanoma[k]
+            filename_seg = melanoma_seg[k]
+            writer.writerow([filename] + [filename_seg] + ['1'])
+        for k in range(len(nevus)):
+            filename = nevus[k]
+            filename_seg = nevus_seg[k]
+            writer.writerow([filename] + [filename_seg] + ['0'])
+        for k in range(len(sk)):
+            filename = sk[k]
+            filename_seg = sk_seg[k]
+            writer.writerow([filename] + [filename_seg] + ['0'])
     # test data
     melanoma = glob.glob(os.path.join(root_dir, 'Test', 'melanoma', '*.jpg')); melanoma.sort()
     nevus    = glob.glob(os.path.join(root_dir, 'Test', 'nevus', '*.jpg')); nevus.sort()

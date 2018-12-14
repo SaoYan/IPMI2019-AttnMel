@@ -109,8 +109,8 @@ def main():
                         if a2 is not None:
                             attn2, __ = visualize_attn(I_test, a2, up_factor=2*opt.base_up_factor, nrow=8)
                             writer.add_image('test/attention_map_2', attn2, i)
-    precision, recall, precision_mel, recall_mel = compute_mean_pecision_recall('test_results.csv')
-    mAP, AUC, __ = compute_metrics('test_results.csv')
+    precision, recall, precision_mel, recall_mel = compute_mean_pecision_recall('test_results.csv', 'test.csv')
+    mAP, AUC, __ = compute_metrics('test_results.csv', 'test.csv')
     print("\ntest result: accuracy %.2f%% \nmean precision %.2f%% mean recall %.2f%% \
             \nprecision for mel %.2f%% recall for mel %.2f%% \nmAP %.2f%% AUC %.4f\n" %
             (100*correct/total, 100*precision, 100*recall, 100*precision_mel, 100*recall_mel, 100*mAP, AUC))

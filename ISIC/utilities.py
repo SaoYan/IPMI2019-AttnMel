@@ -27,9 +27,9 @@ def visualize_attn(I, a, up_factor, nrow):
     vis = 0.4 * img + 0.6 * attn
     return torch.from_numpy(vis).permute(2,0,1), [torch.max(a).item(),torch.min(a).item(),torch.mean(a).item()]
 
-def compute_metrics(result_file):
+def compute_metrics(result_file, gt_file):
     # groundtruth
-    with open('test.csv', 'r', newline='') as csv_file:
+    with open(gt_file, 'r', newline='') as csv_file:
         reader = csv.reader(csv_file, delimiter=',')
         gt = [int(row[2]) for row in reader]
     # prediction
@@ -62,9 +62,9 @@ def compute_metrics(result_file):
     I = np.transpose(I, [2,0,1])
     return mAP, AUC, torch.Tensor(np.float32(I))
 
-def compute_mean_pecision_recall(result_file, threshold=0.5):
+def compute_mean_pecision_recall(result_file, gt_file, threshold=0.5):
     # groundtruth
-    with open('test.csv', 'r', newline='') as csv_file:
+    with open(gt_file, 'r', newline='') as csv_file:
         reader = csv.reader(csv_file, delimiter=',')
         gt = [int(row[2]) for row in reader]
     # prediction
