@@ -71,7 +71,7 @@ def main():
         ToTensor(),
         Normalize((0.7560,0.5222,0.5431), (0.0909, 0.1248, 0.1400))
     ])
-    transform_test = transforms.Compose([
+    transform_val = transforms.Compose([
         RatioCenterCrop(1.0),
         Resize((256,256)),
         CenterCrop((224,224)),
@@ -80,8 +80,8 @@ def main():
     ])
     trainset = ISIC2018(csv_file=train_file, shuffle=True, transform=transform_train)
     trainloader = torch.utils.data.DataLoader(trainset, batch_size=opt.batch_size, shuffle=True, num_workers=8, worker_init_fn=_worker_init_fn_())
-    testset = ISIC2018(csv_file='test.csv', shuffle=False, transform=transform_test)
-    testloader = torch.utils.data.DataLoader(testset, batch_size=64, shuffle=False, num_workers=8)
+    valset = ISIC2018(csv_file='val.csv', shuffle=False, transform=transform_val)
+    valloader = torch.utils.data.DataLoader(valset, batch_size=64, shuffle=False, num_workers=8)
     # mean & std of the datase
     '''
     Mean = torch.zeros(3)
@@ -177,7 +177,7 @@ def main():
                     print("[epoch %d][aug %d/%d][%d/%d] loss %.4f accuracy %.2f%% running avg accuracy %.2f%%"
                         % (epoch, aug, num_aug-1, i, len(trainloader)-1, loss.item(), (100*accuracy), (100*EMA_accuracy)))
                 step += 1
-        # the end of each epoch: test & log
+        # the end of each epoch
         model.eval()
         print('\none epoch done, saving checkpoints ...\n')
         checkpoint = {
@@ -190,26 +190,26 @@ def main():
         total = 0
         correct = 0
         with torch.no_grad():
-            with open('test_results.csv', 'wt', newline='') as csv_file:
+            with open('val_results.csv', 'wt', newline='') as csv_file:
                 csv_writer = csv.writer(csv_file, delimiter=',')
-                for i, data in enumerate(testloader, 0):
-                    images_test, labels_test = data['image'], data['label']
-                    images_test, labels_test = images_test.to(device), labels_test.to(device)
+                for i, data in enumerate(valloader, 0):
+                    images_val, labels_val = data['image'], data['label']
+                    images_val, labels_val = images_val.to(device), labels_val.to(device)
                     if i == 0: # archive images in order to save to logs
-                        images_disp.append(images_test[0:16,:,:,:])
-                    pred_test, __, __ = model.forward(images_test)
-                    predict = torch.argmax(pred_test, 1)
-                    total += labels_test.size(0)
-                    correct += torch.eq(predict, labels_test).sum().double().item()
-                    # record test predicted responses
-                    responses = F.softmax(pred_test, dim=1).squeeze().cpu().numpy()
+                        images_disp.append(images_val[0:16,:,:,:])
+                    pred_val, __, __ = model.forward(images_val)
+                    predict = torch.argmax(pred_val, 1)
+                    total += labels_val.size(0)
+                    correct += torch.eq(predict, labels_val).sum().double().item()
+                    # record prediction
+                    responses = F.softmax(pred_val, dim=1).squeeze().cpu().numpy()
                     responses = [responses[i] for i in range(responses.shape[0])]
                     csv_writer.writerows(responses)
             # log scalars
-            precision, recall = compute_mean_pecision_recall('test_results.csv')
-            writer.add_scalar('test/accuracy', correct/total, epoch)
-            writer.add_scalar('test/mean_precision', np.mean(precision), epoch)
-            writer.add_scalar('test/mean_recall', np.mean(recall), epoch)
+            precision, recall = compute_mean_pecision_recall('val_results.csv')
+            writer.add_scalar('val/accuracy', correct/total, epoch)
+            writer.add_scalar('val/mean_precision', np.mean(precision), epoch)
+            writer.add_scalar('val/mean_recall', np.mean(recall), epoch)
             ####
             print(precision)
             print(recall)
@@ -228,7 +228,7 @@ def main():
             writer.add_scalar('recall/DF',    recall[5], epoch)
             writer.add_scalar('recall/VASC',  recall[6], epoch)
             ####
-            print("\n[epoch %d] test result: accuracy %.2f%% \nmean precision %.2f%% mean recall %.2f%%\n" %
+            print("\n[epoch %d] val result: accuracy %.2f%% \nmean precision %.2f%% mean recall %.2f%%\n" %
                 (epoch, 100*correct/total, 100*np.mean(precision), 100*np.mean(recall)))
             # log images
             if opt.log_images:
@@ -236,8 +236,8 @@ def main():
                 I_train = utils.make_grid(images_disp[0], nrow=4, normalize=True, scale_each=True)
                 writer.add_image('train/image', I_train, epoch)
                 if epoch == 0:
-                    I_test = utils.make_grid(images_disp[1], nrow=4, normalize=True, scale_each=True)
-                    writer.add_image('test/image', I_test, epoch)
+                    I_val = utils.make_grid(images_disp[1], nrow=4, normalize=True, scale_each=True)
+                    writer.add_image('val/image', I_val, epoch)
             if opt.log_images and (not opt.no_attention):
                 print('\nlog attention maps ...\n')
                 # training data
@@ -254,14 +254,14 @@ def main():
                     writer.add_scalar('train_a2/max', stat[0], epoch)
                     writer.add_scalar('train_a2/min', stat[1], epoch)
                     writer.add_scalar('train_a2/mean', stat[2], epoch)
-                # test data
+                # val data
                 __, a1, a2 = model.forward(images_disp[1])
                 if a1 is not None:
-                    attn1, __ = visualize_attn(I_test, a1, up_factor=opt.base_up_factor, nrow=4)
-                    writer.add_image('test/attention_map_1', attn1, epoch)
+                    attn1, __ = visualize_attn(I_val, a1, up_factor=opt.base_up_factor, nrow=4)
+                    writer.add_image('val/attention_map_1', attn1, epoch)
                 if a2 is not None:
-                    attn2, __ = visualize_attn(I_test, a2, up_factor=2*opt.base_up_factor, nrow=4)
-                    writer.add_image('test/attention_map_2', attn2, epoch)
+                    attn2, __ = visualize_attn(I_val, a2, up_factor=2*opt.base_up_factor, nrow=4)
+                    writer.add_image('val/attention_map_2', attn2, epoch)
 
 if __name__ == "__main__":
     if opt.preprocess:

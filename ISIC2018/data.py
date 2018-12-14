@@ -64,6 +64,30 @@ def preprocess_data(root_dir):
         for i in range(47):
             for filename in VASC:
                 writer.writerow([filename] + ['6'])
+    # val data
+    MEL   = glob.glob(os.path.join(root_dir, 'Val', 'MEL', '*.jpg')); MEL.sort()
+    NV    = glob.glob(os.path.join(root_dir, 'Val', 'NV', '*.jpg')); NV.sort()
+    BCC   = glob.glob(os.path.join(root_dir, 'Val', 'BCC', '*.jpg')); BCC.sort()
+    AKIEC = glob.glob(os.path.join(root_dir, 'Val', 'AKIEC', '*.jpg')); AKIEC.sort()
+    BKL   = glob.glob(os.path.join(root_dir, 'Val', 'BKL', '*.jpg')); BKL.sort()
+    DF    = glob.glob(os.path.join(root_dir, 'Val', 'DF', '*.jpg')); DF.sort()
+    VASC  = glob.glob(os.path.join(root_dir, 'Val', 'VASC', '*.jpg')); VASC.sort()
+    with open('val.csv', 'wt', newline='') as csv_file:
+        writer = csv.writer(csv_file, delimiter=',')
+        for filename in MEL:
+            writer.writerow([filename] + ['0'])
+        for filename in NV:
+            writer.writerow([filename] + ['1'])
+        for filename in BCC:
+            writer.writerow([filename] + ['2'])
+        for filename in AKIEC:
+            writer.writerow([filename] + ['3'])
+        for filename in BKL:
+            writer.writerow([filename] + ['4'])
+        for filename in DF:
+            writer.writerow([filename] + ['5'])
+        for filename in VASC:
+            writer.writerow([filename] + ['6'])
     # test data
     MEL   = glob.glob(os.path.join(root_dir, 'Test', 'MEL', '*.jpg')); MEL.sort()
     NV    = glob.glob(os.path.join(root_dir, 'Test', 'NV', '*.jpg')); NV.sort()
