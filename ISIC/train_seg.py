@@ -208,6 +208,8 @@ def main():
             'opt_state_dict': optimizer.state_dict(),
         }
         torch.save(checkpoint, os.path.join(opt.outf,'checkpoint.pth'))
+        if epoch % 10 == 9:
+            torch.save(checkpoint, os.path.join(opt.outf, 'checkpoint_%d.pth' % epoch))
         # log val results
         total = 0
         correct = 0

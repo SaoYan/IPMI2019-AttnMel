@@ -206,7 +206,7 @@ def main():
                     responses = [responses[i] for i in range(responses.shape[0])]
                     csv_writer.writerows(responses)
             # log scalars
-            precision, recall = compute_mean_pecision_recall('val_results.csv')
+            precision, recall = compute_mean_pecision_recall('val_results.csv', 'val.csv')
             writer.add_scalar('val/accuracy', correct/total, epoch)
             writer.add_scalar('val/mean_precision', np.mean(precision), epoch)
             writer.add_scalar('val/mean_recall', np.mean(recall), epoch)
