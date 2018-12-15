@@ -9,9 +9,10 @@ import torchvision
 import torchvision.utils as utils
 import torchvision.transforms as transforms
 from tensorboardX import SummaryWriter
-from networks import AttnVGG
-from utilities_ import *
 from data import preprocess_data, ISIC2018
+from networks import AttnVGG
+from utilities import *
+from transforms import *
 
 os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"
 os.environ["CUDA_VISIBLE_DEVICES"] = "0"
@@ -97,7 +98,9 @@ def main():
                         if c2 is not None:
                             attn2, __ = visualize_attn(I_test, a2, up_factor=2*opt.base_up_factor, nrow=8)
                             writer.add_image('test/attention_map_2', attn2, i)
-    precision, recall = compute_mean_pecision_recall('test_results.csv')
+    precision, recall = compute_mean_pecision_recall('test_results.csv', 'test.csv')
+    print(precision)
+    print(recall)
     print("accuracy %.2f%% \nmean precision %.2f%% mean recall %.2f%%\n" % (100*correct/total, 100*np.mean(precision), 100*np.mean(recall)))
 
 if __name__ == "__main__":
