@@ -148,8 +148,8 @@ def main():
     EMA_accuracy = 0
     writer = SummaryWriter(opt.outf)
     for epoch in range(opt.epochs):
-        torch.cuda.empty_cache()
         images_disp = []
+        torch.cuda.empty_cache()
         # adjust learning rate
         scheduler.step()
         current_lr = optimizer.param_groups[0]['lr']
