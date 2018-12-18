@@ -10,7 +10,7 @@ import torchvision.utils as utils
 import torchvision.transforms as transforms
 from tensorboardX import SummaryWriter
 from data import preprocess_data, ISIC2018
-from networks import AttnVGG
+from networks import AttnVGG, VGG
 from utilities import *
 from transforms import *
 

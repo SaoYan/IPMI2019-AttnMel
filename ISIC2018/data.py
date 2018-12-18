@@ -128,7 +128,7 @@ class ISIC2018(udata.Dataset):
         image = Image.open(pair[0])
         label = int(pair[1])
         # construct one sample
-        sample = {'image': image, 'image_seg': image, 'label': label}
+        sample = {'image': image, 'label': label}
         # transform
         if self.transform:
             sample = self.transform(sample)

@@ -36,7 +36,7 @@ class AttentionBlock(nn.Module):
         else:
             a = torch.sigmoid(c)
         # re-weight the local feature
-        f = torch.mul(a, l) # batch_sizexCxWxH
+        f = torch.mul(a.expand_as(l), l) # batch_sizexCxWxH
         if self.normalize_attn:
             output = f.view(N,C,-1).sum(dim=2) # weighted sum
         else:

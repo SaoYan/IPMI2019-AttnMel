@@ -12,7 +12,7 @@ import torchvision
 import torchvision.utils as utils
 import torchvision.transforms as transforms
 from tensorboardX import SummaryWriter
-from networks import AttnVGG
+from networks import AttnVGG, VGG
 from loss import FocalLoss
 from data import preprocess_data, ISIC2018
 from utilities import *
@@ -59,7 +59,7 @@ def main():
         train_file = 'train_oversample.csv'
     else:
         print('\nno offline oversampled ...\n')
-        num_aug = 1
+        num_aug = 5
         train_file = 'train.csv'
     transform_train = transforms.Compose([
         RatioCenterCrop(1.0),
