@@ -12,7 +12,7 @@ import torch.optim.lr_scheduler as lr_scheduler
 import torchvision
 import torchvision.utils as utils
 import torchvision.transforms as torch_transforms
-from networks import AttnVGG, VGG
+from networks import AttnVGG
 from loss import FocalLoss, DiceLoss
 from data_2017 import preprocess_data, ISIC
 from utilities import *

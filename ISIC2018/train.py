@@ -112,6 +112,7 @@ def main():
         print('\nturn off attention ...\n')
 
     net = AttnVGG(num_classes=7, attention=not opt.no_attention, normalize_attn=opt.normalize_attn)
+    # net = VGG(num_classes=7, gap=False)
 
     if opt.focal_loss:
         print('\nuse focal loss ...\n')

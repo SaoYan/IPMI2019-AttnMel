@@ -65,17 +65,21 @@ class AttnVGG(nn.Module):
 
 
 class VGG(nn.Module):
-    def __init__(self, num_classes, attention=None, normalize_attn=None):
+    def __init__(self, num_classes, gap=False):
         super(VGG, self).__init__()
-        self.attention = attention
+        self.gap = gap
         net = models.vgg16_bn(pretrained=True)
         self.conv_block1 = nn.Sequential(*list(net.features.children())[0:6])
         self.conv_block2 = nn.Sequential(*list(net.features.children())[7:13])
         self.conv_block3 = nn.Sequential(*list(net.features.children())[14:23])
         self.conv_block4 = nn.Sequential(*list(net.features.children())[24:33])
         self.conv_block5 = nn.Sequential(*list(net.features.children())[34:43])
-        self.dense = nn.Sequential(*list(net.classifier.children())[:-1])
-        self.classify = nn.Linear(in_features=4096, out_features=num_classes, bias=True)
+        if self.gap:
+            self.pool = nn.AvgPool2d(7, stride=1)
+            self.classify = nn.Linear(in_features=512, out_features=num_classes, bias=True)
+        else:
+            self.dense = nn.Sequential(*list(net.classifier.children())[:-1])
+            self.classify = nn.Linear(in_features=4096, out_features=num_classes, bias=True)
         # initialize
         self.reset_parameters(self.classify)
     def reset_parameters(self, module):
@@ -102,7 +106,10 @@ class VGG(nn.Module):
         block5 = self.conv_block5(pool4)   # /16
         pool5 = F.max_pool2d(block5, 2, 2) # /32
         N, __, __, __ = pool5.size()
-        g = self.dense(pool5.view(N,-1))
+        if self.gap:
+            g = self.pool(pool5).view(N,-1)
+        else:
+            g = self.dense(pool5.view(N,-1))
         out = self.classify(g)
         a1, a2 = None, None
         return [out, a1, a2]

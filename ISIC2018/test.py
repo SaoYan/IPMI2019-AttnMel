@@ -15,7 +15,7 @@ from utilities import *
 from transforms import *
 
 os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"
-os.environ["CUDA_VISIBLE_DEVICES"] = "0"
+os.environ["CUDA_VISIBLE_DEVICES"] = "1"
 
 torch.backends.cudnn.benchmark = True
 
@@ -61,6 +61,7 @@ def main():
         print('\nturn off attention ...\n')
 
     net = AttnVGG(num_classes=7, attention=not opt.no_attention, normalize_attn=opt.normalize_attn)
+    # net = VGG(num_classes=7, gap=False)
     checkpoint = torch.load('checkpoint.pth')
     net.load_state_dict(checkpoint['state_dict'])
     model = nn.DataParallel(net, device_ids=device_ids).to(device)

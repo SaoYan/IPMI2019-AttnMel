@@ -71,6 +71,7 @@ def main():
         print('\nturn off attention ...\n')
 
     net = AttnVGG(num_classes=2, attention=not opt.no_attention, normalize_attn=opt.normalize_attn)
+    # net = VGG(num_classes=7, gap=False)
     checkpoint = torch.load('checkpoint.pth')
     net.load_state_dict(checkpoint['state_dict'])
     model = nn.DataParallel(net, device_ids=device_ids).to(device)
