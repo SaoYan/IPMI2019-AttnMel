@@ -1,4 +1,3 @@
-import random
 import csv
 import os
 import os.path
@@ -97,12 +96,10 @@ def preprocess_data(root_dir, seg_dir='Train_Lesion'):
             writer.writerow([filename] + [filename_seg] + ['0'])
 
 class ISIC(udata.Dataset):
-    def __init__(self, csv_file, shuffle=True, transform=None):
+    def __init__(self, csv_file, transform=None):
         file = open(csv_file, newline='')
         reader = csv.reader(file, delimiter=',')
         self.pairs = [row for row in reader]
-        if shuffle:
-            random.shuffle(self.pairs)
         self.transform = transform
     def __len__(self):
         return len(self.pairs)
