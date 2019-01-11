@@ -49,7 +49,7 @@ parser.add_argument("--normalize_attn", action='store_true', help='if True, atte
 parser.add_argument("--focal_loss", action='store_true', help='turn on focal loss (otherwise use cross entropy loss)')
 parser.add_argument("--no_attention", action='store_true', help='turn off attention')
 parser.add_argument("--over_sample", action='store_true', help='offline oversampling')
-parser.add_argument("--log_images", action='store_true', help='offline oversampling')
+parser.add_argument("--log_images", action='store_true', help='visualze images in Tensoeboard')
 
 opt = parser.parse_args()
 
@@ -90,9 +90,9 @@ def main():
          Normalize((0.6820, 0.5312, 0.4736), (0.0840, 0.1140, 0.1282)) # ISIC 2017
          # Normalize((0.7012, 0.5517, 0.4875), (0.0942, 0.1331, 0.1521)) # ISIC 2016
     ])
-    trainset = ISIC(csv_file=train_file, shuffle=True, transform=transform_train)
+    trainset = ISIC(csv_file=train_file, transform=transform_train)
     trainloader = torch.utils.data.DataLoader(trainset, batch_size=opt.batch_size, shuffle=True, num_workers=8, worker_init_fn=_worker_init_fn_())
-    valset = ISIC(csv_file='val.csv', shuffle=False, transform=transform_val)
+    valset = ISIC(csv_file='val.csv', transform=transform_val)
     valloader = torch.utils.data.DataLoader(valset, batch_size=64, shuffle=False, num_workers=8)
     print('\ndone\n')
     '''

@@ -40,7 +40,7 @@ parser.add_argument("--normalize_attn", action='store_true', help='if True, atte
 parser.add_argument("--focal_loss", action='store_true', help='turn on focal loss (otherwise use cross entropy loss)')
 parser.add_argument("--no_attention", action='store_true', help='turn off attention')
 parser.add_argument("--over_sample", action='store_true', help='offline oversampling')
-parser.add_argument("--log_images", action='store_true', help='log images')
+parser.add_argument("--log_images", action='store_true', help='visualze images in Tensoeboard')
 
 opt = parser.parse_args()
 
@@ -78,9 +78,9 @@ def main():
         ToTensor(),
         Normalize((0.7560,0.5222,0.5431), (0.0909, 0.1248, 0.1400))
     ])
-    trainset = ISIC2018(csv_file=train_file, shuffle=True, transform=transform_train)
+    trainset = ISIC2018(csv_file=train_file, transform=transform_train)
     trainloader = torch.utils.data.DataLoader(trainset, batch_size=opt.batch_size, shuffle=True, num_workers=8, worker_init_fn=_worker_init_fn_())
-    valset = ISIC2018(csv_file='val.csv', shuffle=False, transform=transform_val)
+    valset = ISIC2018(csv_file='val.csv', transform=transform_val)
     valloader = torch.utils.data.DataLoader(valset, batch_size=64, shuffle=False, num_workers=8)
     # mean & std of the datase
     '''

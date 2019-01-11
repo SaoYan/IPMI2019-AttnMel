@@ -15,7 +15,7 @@ from utilities import *
 from transforms import *
 
 os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"
-os.environ["CUDA_VISIBLE_DEVICES"] = "1"
+os.environ["CUDA_VISIBLE_DEVICES"] = "0"
 
 torch.backends.cudnn.benchmark = True
 
@@ -31,7 +31,7 @@ parser.add_argument("--base_up_factor", type=int, default=8, help="number of epo
 
 parser.add_argument("--normalize_attn", action='store_true', help='if True, attention map is normalized by softmax; otherwise use sigmoid')
 parser.add_argument("--no_attention", action='store_true', help='turn off attention')
-parser.add_argument("--log_images", action='store_true', help='log images')
+parser.add_argument("--log_images", action='store_true', help='visualze images in Tensoeboard')
 
 opt = parser.parse_args()
 
@@ -45,7 +45,7 @@ def main():
         ToTensor(),
         Normalize((0.7560,0.5222,0.5431), (0.0909, 0.1248, 0.1400))
     ])
-    testset = ISIC2018(csv_file='test.csv', shuffle=False, transform=transform_test)
+    testset = ISIC2018(csv_file='test.csv', transform=transform_test)
     testloader = torch.utils.data.DataLoader(testset, batch_size=64, shuffle=False, num_workers=8)
     print('done')
 

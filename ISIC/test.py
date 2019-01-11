@@ -40,7 +40,7 @@ parser.add_argument("--base_up_factor", type=int, default=8, help="number of epo
 
 parser.add_argument("--normalize_attn", action='store_true', help='if True, attention map is normalized by softmax; otherwise use sigmoid')
 parser.add_argument("--no_attention", action='store_true', help='turn off attention')
-parser.add_argument("--log_images", action='store_true', help='log images')
+parser.add_argument("--log_images", action='store_true', help='visualze images in Tensoeboard')
 
 opt = parser.parse_args()
 
