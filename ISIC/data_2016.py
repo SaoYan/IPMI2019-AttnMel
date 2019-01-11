@@ -1,4 +1,3 @@
-import random
 import csv
 import os
 import os.path
