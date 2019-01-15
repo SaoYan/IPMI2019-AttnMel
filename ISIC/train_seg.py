@@ -91,7 +91,8 @@ def main():
          # Normalize((0.7012, 0.5517, 0.4875), (0.0942, 0.1331, 0.1521)) # ISIC 2016
     ])
     trainset = ISIC(csv_file=train_file, transform=transform_train)
-    trainloader = torch.utils.data.DataLoader(trainset, batch_size=opt.batch_size, shuffle=True, num_workers=8, worker_init_fn=_worker_init_fn_())
+    trainloader = torch.utils.data.DataLoader(trainset, batch_size=opt.batch_size, shuffle=True,
+        num_workers=8, worker_init_fn=_worker_init_fn_(), drop_last=True)
     valset = ISIC(csv_file='val.csv', transform=transform_val)
     valloader = torch.utils.data.DataLoader(valset, batch_size=64, shuffle=False, num_workers=8)
     print('\ndone\n')
@@ -149,8 +150,10 @@ def main():
     step = 0
     EMA_accuracy = 0
     writer = SummaryWriter(opt.outf)
+    data_iter = iter(valloader)
+    fixed_batch = next(data_iter)
+    fixed_batch = fixed_batch['image'][0:16,:,:,:].to(device)
     for epoch in range(opt.epochs):
-        images_disp = []
         torch.cuda.empty_cache()
         # adjust learning rate
         scheduler.step()
@@ -169,10 +172,6 @@ def main():
                 seg_1 = F.adaptive_avg_pool2d(seg, im_size//opt.base_up_factor)
                 seg_2 = F.adaptive_avg_pool2d(seg, im_size//opt.base_up_factor//2)
                 inputs, seg_1, seg_2, labels = inputs.to(device), seg_1.to(device), seg_2.to(device), labels.to(device)
-                if (aug == 0) and (i == 0): # archive images in order to save to logs
-                    images_disp.append(inputs[0:16,:,:,:])
-                    images_disp.append(seg_1[0:16,:,:,:])
-                    images_disp.append(seg_2[0:16,:,:,:])
                 # forward
                 pred, a1, a2 = model.forward(inputs)
                 # backward
@@ -219,8 +218,6 @@ def main():
                 for i, data in enumerate(valloader, 0):
                     images_val, labels_val = data['image'], data['label']
                     images_val, labels_val = images_val.to(device), labels_val.to(device)
-                    if i == 0: # archive images in order to save to logs
-                        images_disp.append(images_val[0:16,:,:,:])
                     pred_val, __, __ = model.forward(images_val)
                     predict = torch.argmax(pred_val, 1)
                     total += labels_val.size(0)
@@ -246,19 +243,19 @@ def main():
             # log images
             if opt.log_images:
                 print('\nlog images ...\n')
-                I_train = utils.make_grid(images_disp[0], nrow=4, normalize=True, scale_each=True)
-                I_seg_1 = utils.make_grid(images_disp[1], nrow=4, normalize=True, scale_each=True)
-                I_seg_2 = utils.make_grid(images_disp[2], nrow=4, normalize=True, scale_each=True)
+                I_train = utils.make_grid(inputs[0:16,:,:,:], nrow=4, normalize=True, scale_each=True)
+                I_seg_1 = utils.make_grid(seg_1[0:16,:,:,:], nrow=4, normalize=True, scale_each=True)
+                I_seg_2 = utils.make_grid(seg_2[0:16,:,:,:], nrow=4, normalize=True, scale_each=True)
                 writer.add_image('train/image', I_train, epoch)
                 writer.add_image('train/seg1', I_seg_1, epoch)
                 writer.add_image('train/seg2', I_seg_2, epoch)
                 if epoch == 0:
-                    I_val = utils.make_grid(images_disp[3], nrow=4, normalize=True, scale_each=True)
+                    I_val = utils.make_grid(fixed_batch, nrow=4, normalize=True, scale_each=True)
                     writer.add_image('val/image', I_val, epoch)
             if opt.log_images and (not opt.no_attention):
                 print('\nlog attention maps ...\n')
                 # training data
-                __, a1, a2 = model.forward(images_disp[0])
+                __, a1, a2 = model.forward(inputs[0:16,:,:,:])
                 if a1 is not None:
                     attn1, stat = visualize_attn(I_train, a1, up_factor=opt.base_up_factor, nrow=4)
                     writer.add_image('train/attention_map_1', attn1, epoch)
@@ -272,7 +269,7 @@ def main():
                     writer.add_scalar('train_a2/min', stat[1], epoch)
                     writer.add_scalar('train_a2/mean', stat[2], epoch)
                 # val data
-                __, a1, a2 = model.forward(images_disp[3])
+                __, a1, a2 = model.forward(fixed_batch)
                 if a1 is not None:
                     attn1, __ = visualize_attn(I_val, a1, up_factor=opt.base_up_factor, nrow=4)
                     writer.add_image('val/attention_map_1', attn1, epoch)
