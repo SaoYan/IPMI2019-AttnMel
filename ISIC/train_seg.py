@@ -1,4 +1,4 @@
-valimport os
+import os
 import csv
 import random
 import argparse
