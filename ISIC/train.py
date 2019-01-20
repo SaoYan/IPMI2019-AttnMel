@@ -149,9 +149,10 @@ def main():
     step = 0
     EMA_accuracy = 0
     writer = SummaryWriter(opt.outf)
-    data_iter = iter(valloader)
-    fixed_batch = next(data_iter)
-    fixed_batch = fixed_batch['image'][0:16,:,:,:].to(device)
+    if opt.log_images:
+        data_iter = iter(valloader)
+        fixed_batch = next(data_iter)
+        fixed_batch = fixed_batch['image'][0:16,:,:,:].to(device)
     for epoch in range(opt.epochs):
         torch.cuda.empty_cache()
         # adjust learning rate
