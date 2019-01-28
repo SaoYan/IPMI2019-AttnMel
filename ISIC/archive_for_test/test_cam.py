@@ -99,7 +99,7 @@ def main():
                 images_test, seg_test, labels_test = data['image'], data['image_seg'], data['label']
                 seg_test = seg_test[:,-1:,:,:]
                 images_test, labels_test = images_test.to(device), labels_test.to(device)
-                pred_test, __, __ = model.forward(images_test)
+                pred_test, __, __ = model(images_test)
                 predict = torch.argmax(pred_test, 1)
                 total += labels_test.size(0)
                 correct += torch.eq(predict, labels_test).sum().double().item()

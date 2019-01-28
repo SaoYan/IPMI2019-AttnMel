@@ -160,7 +160,7 @@ def main():
                 inputs, labels = data['image'], data['label']
                 inputs, labels = inputs.to(device), labels.to(device)
                 # forward
-                pred, __, __ = model.forward(inputs)
+                pred, __, __ = model(inputs)
                 # backward
                 loss = criterion(pred, labels)
                 loss.backward()
@@ -168,7 +168,7 @@ def main():
                 # display results
                 if i % 10 == 0:
                     model.eval()
-                    pred, __, __ = model.forward(inputs)
+                    pred, __, __ = model(inputs)
                     predict = torch.argmax(pred, 1)
                     total = labels.size(0)
                     correct = torch.eq(predict, labels).sum().double().item()
@@ -198,7 +198,7 @@ def main():
                 for i, data in enumerate(valloader, 0):
                     images_val, labels_val = data['image'], data['label']
                     images_val, labels_val = images_val.to(device), labels_val.to(device)
-                    pred_val, __, __ = model.forward(images_val)
+                    pred_val, __, __ = model(images_val)
                     predict = torch.argmax(pred_val, 1)
                     total += labels_val.size(0)
                     correct += torch.eq(predict, labels_val).sum().double().item()
@@ -242,7 +242,7 @@ def main():
             if opt.log_images and (not opt.no_attention):
                 print('\nlog attention maps ...\n')
                 # training data
-                __, a1, a2 = model.forward(inputs[0:16,:,:,:])
+                __, a1, a2 = model(inputs[0:16,:,:,:])
                 if a1 is not None:
                     attn1, stat = visualize_attn(I_train, a1, up_factor=opt.base_up_factor, nrow=4)
                     writer.add_image('train/attention_map_1', attn1, epoch)
@@ -256,7 +256,7 @@ def main():
                     writer.add_scalar('train_a2/min', stat[1], epoch)
                     writer.add_scalar('train_a2/mean', stat[2], epoch)
                 # val data
-                __, a1, a2 = model.forward(fixed_batch)
+                __, a1, a2 = model(fixed_batch)
                 if a1 is not None:
                     attn1, __ = visualize_attn(I_val, a1, up_factor=opt.base_up_factor, nrow=4)
                     writer.add_image('val/attention_map_1', attn1, epoch)

@@ -99,7 +99,7 @@ def main():
                 images_test, seg_test, labels_test = data['image'], data['image_seg'], data['label']
                 seg_test = seg_test[:,-1:,:,:]
                 images_test, labels_test = images_test.to(device), labels_test.to(device)
-                pred_test, __, __ = model.forward(images_test)
+                pred_test, __, __ = model(images_test)
                 predict = torch.argmax(pred_test, 1)
                 total += labels_test.size(0)
                 correct += torch.eq(predict, labels_test).sum().double().item()
@@ -115,7 +115,7 @@ def main():
                     writer.add_image('test/seg', Seg_test, i)
                     # accention maps
                     if not opt.no_attention:
-                        __, a1, a2 = model.forward(images_test)
+                        __, a1, a2 = model(images_test)
                         if a1 is not None:
                             attn1, map1, __ = visualize_attn(I_test, a1, up_factor=opt.base_up_factor, nrow=1)
                             mask1 = compute_mask_from_attn(map1)
