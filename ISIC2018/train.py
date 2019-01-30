@@ -52,13 +52,13 @@ def _worker_init_fn_():
 
 def main():
     # load data
-    print('\nloading the dataset ...\n')
+    print('\nloading the dataset ...')
     if opt.over_sample:
-        print('\ndata is offline oversampled ...\n')
+        print('data is offline oversampled ...')
         num_aug = 1
         train_file = 'train_oversample.csv'
     else:
-        print('\nno offline oversampled ...\n')
+        print('no offline oversampled ...')
         num_aug = 5
         train_file = 'train.csv'
     transform_train = transforms.Compose([
@@ -98,36 +98,36 @@ def main():
     print('std: '), print(Std.numpy())
     return
     '''
-    print('done')
+    print('done\n')
 
     # load network
-    print('\nloading the model ...\n')
+    print('\nloading the model ...')
 
     if not opt.no_attention:
-        print('\nturn on attention ...\n')
+        print('turn on attention ...')
         if opt.normalize_attn:
-            print('\nuse softmax for attention map ...\n')
+            print('use softmax for attention map ...')
         else:
-            print('\nuse sigmoid for attention map ...\n')
+            print('use sigmoid for attention map ...')
     else:
-        print('\nturn off attention ...\n')
+        print('turn off attention ...')
 
     net = AttnVGG(num_classes=7, attention=not opt.no_attention, normalize_attn=opt.normalize_attn)
     # net = VGG(num_classes=7, gap=False)
 
     if opt.focal_loss:
-        print('\nuse focal loss ...\n')
+        print('use focal loss ...')
         criterion = FocalLoss(gama=2., size_average=True, weight=None)
     else:
-        print('\nuse cross entropy loss ...\n')
+        print('use cross entropy loss ...')
         criterion = nn.CrossEntropyLoss()
-    print('\ndone\n')
+    print('done\n')
 
     # move to GPU
-    print('\nmoving models to GPU ...\n')
+    print('\nmoving models to GPU ...')
     model = nn.DataParallel(net, device_ids=device_ids).to(device)
     criterion.to(device)
-    print('\ndone\n')
+    print('done\n')
 
     # optimizer
     optimizer = optim.SGD(model.parameters(), lr=opt.lr, momentum=0.9, weight_decay=5e-4)

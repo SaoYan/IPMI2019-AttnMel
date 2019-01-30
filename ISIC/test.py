@@ -46,7 +46,7 @@ opt = parser.parse_args()
 
 def main():
     # load data
-    print('\nloading the dataset ...\n')
+    print('\nloading the dataset ...')
     transform_test = torch_transforms.Compose([
          RatioCenterCrop(0.8),
          Resize((256,256)),
@@ -57,26 +57,26 @@ def main():
     ])
     testset = ISIC(csv_file='test.csv', shuffle=False, transform=transform_test)
     testloader = torch.utils.data.DataLoader(testset, batch_size=64, shuffle=False, num_workers=8)
-    print('done')
+    print('done\n')
 
     # load network
-    print('\nloading the model ...\n')
+    print('\nloading the model ...')
     if not opt.no_attention:
-        print('\nturn on attention ...\n')
+        print('turn on attention ...')
         if opt.normalize_attn:
-            print('\nuse softmax for attention map ...\n')
+            print('use softmax for attention map ...')
         else:
-            print('\nuse sigmoid for attention map ...\n')
+            print('use sigmoid for attention map ...')
     else:
-        print('\nturn off attention ...\n')
+        print('turn off attention ...')
 
     net = AttnVGG(num_classes=2, attention=not opt.no_attention, normalize_attn=opt.normalize_attn)
-    # net = VGG(num_classes=7, gap=False)
+    # net = VGG(num_classes=2, gap=False)
     checkpoint = torch.load('checkpoint.pth')
     net.load_state_dict(checkpoint['state_dict'])
     model = nn.DataParallel(net, device_ids=device_ids).to(device)
     model.eval()
-    print('done')
+    print('done\n')
 
     # testing
     print('\nstart testing ...\n')
