@@ -92,11 +92,11 @@ def main():
                     I_test = utils.make_grid(images_test, nrow=8, normalize=True, scale_each=True)
                     writer.add_image('test/image', I_test, i)
                     if not opt.no_attention:
-                        __, a1, a2 = model.forward(images_disp)
-                        if c1 is not None:
+                        __, a1, a2 = model.forward(images_test)
+                        if a1 is not None:
                             attn1, __ = visualize_attn(I_test, a1, up_factor=opt.base_up_factor, nrow=8)
                             writer.add_image('test/attention_map_1', attn1, i)
-                        if c2 is not None:
+                        if a2 is not None:
                             attn2, __ = visualize_attn(I_test, a2, up_factor=2*opt.base_up_factor, nrow=8)
                             writer.add_image('test/attention_map_2', attn2, i)
     precision, recall = compute_mean_pecision_recall('test_results.csv', 'test.csv')
@@ -106,5 +106,5 @@ def main():
 
 if __name__ == "__main__":
     if opt.preprocess:
-        preprocess_data(root_dir='data_2018')
+        preprocess_data(root_dir='../data_2018')
     main()

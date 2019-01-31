@@ -111,6 +111,12 @@ def preprocess_data(root_dir):
             writer.writerow([filename] + ['5'])
         for filename in VASC:
             writer.writerow([filename] + ['6'])
+    # official test data
+    official_test = glob.glob(os.path.join(root_dir, 'Actual_Test', '*.jpg')); official_test.sort()
+    with open('official_test.csv', 'wt', newline='') as csv_file:
+        writer = csv.writer(csv_file, delimiter=',')
+        for filename in official_test:
+            writer.writerow([filename] + ['-1'])
 
 class ISIC2018(udata.Dataset):
     def __init__(self, csv_file, transform=None):
