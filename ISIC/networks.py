@@ -108,19 +108,8 @@ class VGG(nn.Module):
             self.dense = nn.Sequential(*list(net.classifier.children())[:-1])
             self.cls = nn.Linear(in_features=4096, out_features=num_classes, bias=True)
         # initialize
-        self.reset_parameters(self.cls)
-    def reset_parameters(self, module):
-        for m in module.modules():
-            if isinstance(m, nn.Conv2d):
-                nn.init.kaiming_normal_(m.weight, mode='fan_out', nonlinearity='relu')
-                if m.bias is not None:
-                    nn.init.constant_(m.bias, 0.)
-            elif isinstance(m, nn.BatchNorm2d):
-                nn.init.constant_(m.weight, 1.)
-                nn.init.constant_(m.bias, 0.)
-            elif isinstance(m, nn.Linear):
-                nn.init.normal_(m.weight, 0., 0.01)
-                nn.init.constant_(m.bias, 0.)
+        nn.init.normal_(self.cls.weight, 0., 0.01)
+        nn.init.constant_(self.cls.bias, 0.)
     def forward(self, x):
         block1 = self.conv_block1(x)       # /1
         pool1 = F.max_pool2d(block1, 2, 2) # /2
