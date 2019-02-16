@@ -22,9 +22,8 @@ from transforms import *
 switch between ISIC 2016 and 2017
 modify the following contents:
 1. import
-2. num_aug
-3. root_dir of preprocess_data
-4. mean and std of transforms.Normalize
+2. root_dir of preprocess_data
+3. mean and std of transforms.Normalize
 '''
 
 os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"
@@ -64,11 +63,9 @@ def main():
     print('\nloading the dataset ...')
     if opt.over_sample:
         print('data is offline oversampled ...')
-        num_aug = 5
         train_file = 'train_oversample.csv'
     else:
         print('no offline oversampling ...')
-        num_aug = 8
         train_file = 'train.csv'
     im_size = 224
     transform_train = torch_transforms.Compose([
@@ -141,8 +138,8 @@ def main():
     print('done\n')
 
     # optimizer
-    optimizer = optim.SGD(model.parameters(), lr=opt.lr, momentum=0.9, weight_decay=5e-4)
-    lr_lambda = lambda epoch : np.power(0.5, epoch//10)
+    optimizer = optim.SGD(model.parameters(), lr=opt.lr, momentum=0.9, weight_decay=1e-4, nesterov=True)
+    lr_lambda = lambda epoch : np.power(0.1, epoch//10)
     scheduler = lr_scheduler.LambdaLR(optimizer, lr_lambda=lr_lambda)
 
     # training
@@ -162,43 +159,42 @@ def main():
         writer.add_scalar('train/learning_rate', current_lr, epoch)
         print("\nepoch %d learning rate %f\n" % (epoch, current_lr))
         # run for one epoch
-        for aug in range(num_aug):
-            for i, data in enumerate(trainloader, 0):
-                # warm up
-                model.train()
-                model.zero_grad()
-                optimizer.zero_grad()
-                inputs, seg, labels = data['image'], data['image_seg'], data['label']
-                seg = seg[:,-1:,:,:]
-                seg_1 = F.adaptive_avg_pool2d(seg, im_size//opt.base_up_factor)
-                seg_2 = F.adaptive_avg_pool2d(seg, im_size//opt.base_up_factor//2)
-                inputs, seg_1, seg_2, labels = inputs.to(device), seg_1.to(device), seg_2.to(device), labels.to(device)
-                # forward
-                pred, a1, a2 = model(inputs)
-                # backward
-                loss_c = criterion(pred, labels)
-                loss_seg1 = dice(a1, seg_1)
-                loss_seg2 = dice(a2, seg_2)
-                loss = loss_c + 0.001 * loss_seg1 + 0.01 * loss_seg2
-                loss.backward()
-                optimizer.step()
-                # display results
-                if i % 10 == 0:
-                    model.eval()
-                    pred, __, __ = model(inputs)
-                    predict = torch.argmax(pred, 1)
-                    total = labels.size(0)
-                    correct = torch.eq(predict, labels).sum().double().item()
-                    accuracy = correct / total
-                    EMA_accuracy = 0.98*EMA_accuracy + 0.02*accuracy
-                    writer.add_scalar('train/loss_c', loss_c.item(), step)
-                    writer.add_scalar('train/loss_seg1', loss_seg1.item(), step)
-                    writer.add_scalar('train/loss_seg2', loss_seg2.item(), step)
-                    writer.add_scalar('train/accuracy', accuracy, step)
-                    writer.add_scalar('train/EMA_accuracy', EMA_accuracy, step)
-                    print("[epoch %d][aug %d/%d][%d/%d] loss_c %.4f loss_seg1 %.4f loss_seg2 %.4f accuracy %.2f%% EMA %.2f%%"
-                        % (epoch, aug, num_aug-1, i, len(trainloader)-1, loss.item(), loss_seg1.item(), loss_seg2.item(), (100*accuracy), (100*EMA_accuracy)))
-                step += 1
+        for i, data in enumerate(trainloader, 0):
+            # warm up
+            model.train()
+            model.zero_grad()
+            optimizer.zero_grad()
+            inputs, seg, labels = data['image'], data['image_seg'], data['label']
+            seg = seg[:,-1:,:,:]
+            seg_1 = F.adaptive_avg_pool2d(seg, im_size//opt.base_up_factor)
+            seg_2 = F.adaptive_avg_pool2d(seg, im_size//opt.base_up_factor//2)
+            inputs, seg_1, seg_2, labels = inputs.to(device), seg_1.to(device), seg_2.to(device), labels.to(device)
+            # forward
+            pred, a1, a2 = model(inputs)
+            # backward
+            loss_c = criterion(pred, labels)
+            loss_seg1 = dice(a1, seg_1)
+            loss_seg2 = dice(a2, seg_2)
+            loss = loss_c + 0.001 * loss_seg1 + 0.01 * loss_seg2
+            loss.backward()
+            optimizer.step()
+            # display results
+            if i % 10 == 0:
+                model.eval()
+                pred, __, __ = model(inputs)
+                predict = torch.argmax(pred, 1)
+                total = labels.size(0)
+                correct = torch.eq(predict, labels).sum().double().item()
+                accuracy = correct / total
+                EMA_accuracy = 0.98*EMA_accuracy + 0.02*accuracy
+                writer.add_scalar('train/loss_c', loss_c.item(), step)
+                writer.add_scalar('train/loss_seg1', loss_seg1.item(), step)
+                writer.add_scalar('train/loss_seg2', loss_seg2.item(), step)
+                writer.add_scalar('train/accuracy', accuracy, step)
+                writer.add_scalar('train/EMA_accuracy', EMA_accuracy, step)
+                print("[epoch %d][%d/%d] loss_c %.4f loss_seg1 %.4f loss_seg2 %.4f accuracy %.2f%% EMA %.2f%%"
+                    % (epoch+1, i+1, len(trainloader), loss.item(), loss_seg1.item(), loss_seg2.item(), (100*accuracy), (100*EMA_accuracy)))
+            step += 1
         # the end of each epoch
         model.eval()
         # save checkpoints
