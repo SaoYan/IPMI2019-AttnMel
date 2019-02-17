@@ -22,8 +22,9 @@ from transforms import *
 switch between ISIC 2016 and 2017
 modify the following contents:
 1. import
-2. root_dir of preprocess_data
-3. mean and std of transforms.Normalize
+2. num_aug
+3. root_dir of preprocess_data
+4. mean and std of transforms.Normalize
 '''
 
 os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"
@@ -34,7 +35,7 @@ torch.backends.cudnn.benchmark = True
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 device_ids = [0]
 
-parser = argparse.ArgumentParser(description="Attn-Skin-train")
+parser = argparse.ArgumentParser()
 
 parser.add_argument("--preprocess", action='store_true', help="run preprocess_data")
 
@@ -61,6 +62,7 @@ def _worker_init_fn_():
 def main():
     # load data
     print('\nloading the dataset ...')
+    num_aug = 1
     if opt.over_sample:
         print('data is offline oversampled ...')
         train_file = 'train_oversample.csv'
@@ -158,34 +160,35 @@ def main():
         writer.add_scalar('train/learning_rate', current_lr, epoch)
         print("\nepoch %d learning rate %f\n" % (epoch, current_lr))
         # run for one epoch
-        for i, data in enumerate(trainloader, 0):
-            # warm up
-            model.train()
-            model.zero_grad()
-            optimizer.zero_grad()
-            inputs, labels = data['image'], data['label']
-            inputs, labels = inputs.to(device), labels.to(device)
-            # forward
-            pred, __, __ = model(inputs)
-            # backward
-            loss = criterion(pred, labels)
-            loss.backward()
-            optimizer.step()
-            # display results
-            if i % 10 == 0:
-                model.eval()
+        for aug in range(num_aug):
+            for i, data in enumerate(trainloader, 0):
+                # warm up
+                model.train()
+                model.zero_grad()
+                optimizer.zero_grad()
+                inputs, labels = data['image'], data['label']
+                inputs, labels = inputs.to(device), labels.to(device)
+                # forward
                 pred, __, __ = model(inputs)
-                predict = torch.argmax(pred, 1)
-                total = labels.size(0)
-                correct = torch.eq(predict, labels).sum().double().item()
-                accuracy = correct / total
-                EMA_accuracy = 0.98*EMA_accuracy + 0.02*accuracy
-                writer.add_scalar('train/loss_c', loss.item(), step)
-                writer.add_scalar('train/accuracy', accuracy, step)
-                writer.add_scalar('train/EMA_accuracy', EMA_accuracy, step)
-                print("[epoch %d][%d/%d] loss %.4f accuracy %.2f%% EMA_accuracy %.2f%%"
-                    % (epoch+1, i+1, len(trainloader), loss.item(), (100*accuracy), (100*EMA_accuracy)))
-            step += 1
+                # backward
+                loss = criterion(pred, labels)
+                loss.backward()
+                optimizer.step()
+                # display results
+                if i % 10 == 0:
+                    model.eval()
+                    pred, __, __ = model(inputs)
+                    predict = torch.argmax(pred, 1)
+                    total = labels.size(0)
+                    correct = torch.eq(predict, labels).sum().double().item()
+                    accuracy = correct / total
+                    EMA_accuracy = 0.98*EMA_accuracy + 0.02*accuracy
+                    writer.add_scalar('train/loss_c', loss.item(), step)
+                    writer.add_scalar('train/accuracy', accuracy, step)
+                    writer.add_scalar('train/EMA_accuracy', EMA_accuracy, step)
+                    print("[epoch %d][aug %d/%d][%d/%d] loss %.4f accuracy %.2f%% EMA_accuracy %.2f%%"
+                        % (epoch+1, aug+1, num_aug, i+1, len(trainloader), loss.item(), (100*accuracy), (100*EMA_accuracy)))
+                step += 1
         # the end of each epoch
         model.eval()
         # save checkpoints
