@@ -178,7 +178,7 @@ def main():
                     writer.add_scalar('train/accuracy', accuracy, step)
                     writer.add_scalar('train/EMA_accuracy', EMA_accuracy, step)
                     print("[epoch %d][aug %d/%d][%d/%d] loss %.4f accuracy %.2f%% running avg accuracy %.2f%%"
-                        % (epoch, aug, num_aug-1, i, len(trainloader)-1, loss.item(), (100*accuracy), (100*EMA_accuracy)))
+                        % (epoch+1, aug+1, num_aug, i+1, len(trainloader), loss.item(), (100*accuracy), (100*EMA_accuracy)))
                 step += 1
         # the end of each epoch
         model.eval()
@@ -230,7 +230,7 @@ def main():
             writer.add_scalar('recall/VASC',  recall[6], epoch)
             ####
             print("\n[epoch %d] val result: accuracy %.2f%% \nmean precision %.2f%% mean recall %.2f%%\n" %
-                (epoch, 100*correct/total, 100*np.mean(precision), 100*np.mean(recall)))
+                (epoch+1, 100*correct/total, 100*np.mean(precision), 100*np.mean(recall)))
             # log images
             if opt.log_images:
                 print('\nlog images ...\n')

@@ -230,7 +230,7 @@ def main():
             writer.add_image('curve/ROC', ROC, epoch)
             print("\n[epoch %d] val result: accuracy %.2f%% \nmean precision %.2f%% mean recall %.2f%% \
                     \nprecision for mel %.2f%% recall for mel %.2f%% \nmAP %.2f%% AUC %.4f\n" %
-                    (epoch, 100*correct/total, 100*precision, 100*recall, 100*precision_mel, 100*recall_mel, 100*mAP, AUC))
+                    (epoch+1, 100*correct/total, 100*precision, 100*recall, 100*precision_mel, 100*recall_mel, 100*mAP, AUC))
             # log images
             if opt.log_images:
                 print('\nlog images ...\n')
