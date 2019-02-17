@@ -32,7 +32,7 @@ class AttentionBlock(nn.Module):
         return a, output
 
 class AttnVGG(nn.Module):
-    def __init__(self, num_classes, attention=True, normalize_attn=False):
+    def __init__(self, num_classes, attention=True, normalize_attn=False, dropout=None):
         super(AttnVGG, self).__init__()
         self.attention = attention
         net = models.vgg16_bn(pretrained=True)
@@ -42,6 +42,9 @@ class AttnVGG(nn.Module):
         self.conv_block4 = nn.Sequential(*list(net.features.children())[24:33])
         self.conv_block5 = nn.Sequential(*list(net.features.children())[34:43])
         self.pool = nn.AvgPool2d(7, stride=1)
+        self.dpt = None
+        if dropout is not None:
+            self.dpt = nn.Dropout(dropout)
         self.cls = nn.Linear(in_features=512+512+256, out_features=num_classes, bias=True)
         if self.attention:
             self.attn1 = AttentionBlock(256, 512, 256, 4, normalize_attn=normalize_attn)
@@ -80,12 +83,16 @@ class AttnVGG(nn.Module):
             a1, g1 = self.attn1(pool3, pool5)
             a2, g2 = self.attn2(pool4, pool5)
             g_hat = torch.cat((g,g1,g2), dim=1) # batch_size x C
+            if self.dpt is not None:
+                g_hat = self.dpt(g_hat)
             out = self.cls(g_hat)
         else:
             g = self.pool(pool5).view(N,512)
             g1 = F.adaptive_avg_pool2d(pool3, (1,1)).view(N,-1)
             g2 = F.adaptive_avg_pool2d(pool4, (1,1)).view(N,-1)
             g_hat = torch.cat((g,g1,g2), dim=1) # batch_size x C
+            if self.dpt is not None:
+                g_hat = self.dpt(g_hat)
             out = self.cls(g_hat)
             a1, a2 = None, None
         return [out, a1, a2]

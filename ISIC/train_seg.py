@@ -120,7 +120,7 @@ def main():
     else:
         print('turn off attention ...')
 
-    net = AttnVGG(num_classes=2, attention=not opt.no_attention, normalize_attn=opt.normalize_attn)
+    net = AttnVGG(num_classes=2, attention=not opt.no_attention, normalize_attn=opt.normalize_attn, dropout=0.5)
     dice = DiceLoss()
     if opt.focal_loss:
         print('use focal loss ...')
