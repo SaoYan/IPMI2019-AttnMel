@@ -111,7 +111,7 @@ def main():
                             attn2, __ = visualize_attn(I_test, a2, up_factor=2*opt.base_up_factor, nrow=8)
                             writer.add_image('test/attention_map_2', attn2, i)
     AP, AUC, precision_mean, precision_mel, recall_mean, recall_mel = compute_metrics('test_results.csv', 'test.csv')
-    print("\ntest result: accuracy %.2f%%" % 100*correct/total)
+    print("\ntest result: accuracy %.2f%%" % (100*correct/total))
     print("\nmean precision %.2f%% mean recall %.2f%% \nprecision for mel %.2f%% recall for mel %.2f%%" %
             (100*precision_mean, 100*recall_mean, 100*precision_mel, 100*recall_mel))
     print("\nAP %.4f AUC %.4f\n" % (AP, AUC))
