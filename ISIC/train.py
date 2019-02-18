@@ -22,7 +22,7 @@ from transforms import *
 switch between ISIC 2016 and 2017
 modify the following contents:
 1. import
-2. num_aug
+2. num_aug: x2 for ISIC 2017; x5 for ISIC 2016
 3. root_dir of preprocess_data
 4. mean and std of transforms.Normalize
 '''
@@ -121,7 +121,7 @@ def main():
     else:
         print('turn off attention ...')
 
-    net = AttnVGG(num_classes=2, attention=not opt.no_attention, normalize_attn=opt.normalize_attn, dropout=0.5)
+    net = AttnVGG(num_classes=2, attention=not opt.no_attention, normalize_attn=opt.normalize_attn)
     # net = VGG(num_classes=2, gap=False)
 
     if opt.focal_loss:
@@ -147,6 +147,7 @@ def main():
     print('\nstart training ...\n')
     step = 0
     EMA_accuracy = 0
+    AUC_val = 0
     writer = SummaryWriter(opt.outf)
     if opt.log_images:
         data_iter = iter(valloader)
@@ -182,25 +183,15 @@ def main():
                     total = labels.size(0)
                     correct = torch.eq(predict, labels).sum().double().item()
                     accuracy = correct / total
-                    EMA_accuracy = 0.98*EMA_accuracy + 0.02*accuracy
+                    EMA_accuracy = 0.9*EMA_accuracy + 0.1*accuracy
                     writer.add_scalar('train/loss_c', loss.item(), step)
                     writer.add_scalar('train/accuracy', accuracy, step)
                     writer.add_scalar('train/EMA_accuracy', EMA_accuracy, step)
                     print("[epoch %d][aug %d/%d][%d/%d] loss %.4f accuracy %.2f%% EMA_accuracy %.2f%%"
                         % (epoch+1, aug+1, num_aug, i+1, len(trainloader), loss.item(), (100*accuracy), (100*EMA_accuracy)))
                 step += 1
-        # the end of each epoch
+        # the end of each epoch - validation results
         model.eval()
-        # save checkpoints
-        print('\none epoch done, saving checkpoints ...\n')
-        checkpoint = {
-            'state_dict': model.module.state_dict(),
-            'opt_state_dict': optimizer.state_dict(),
-        }
-        torch.save(checkpoint, os.path.join(opt.outf,'checkpoint.pth'))
-        if epoch % 10 == 9:
-            torch.save(checkpoint, os.path.join(opt.outf, 'checkpoint_%d.pth' % epoch))
-        # log val results
         total = 0
         correct = 0
         with torch.no_grad():
@@ -217,20 +208,30 @@ def main():
                     responses = F.softmax(pred_val, dim=1).squeeze().cpu().numpy()
                     responses = [responses[i] for i in range(responses.shape[0])]
                     csv_writer.writerows(responses)
+            AP, AUC, precision_mean, precision_mel, recall_mean, recall_mel =
+                compute_metrics('val_results.csv', 'val.csv')
+            # save checkpoints
+            print('\nsaving checkpoints ...\n')
+            checkpoint = {
+                'state_dict': model.module.state_dict(),
+                'opt_state_dict': optimizer.state_dict(),
+            }
+            torch.save(checkpoint, os.path.join(opt.outf, 'checkpoint_latest.pth'))
+            if AUC > AUC_val: # save optimal validation model
+                torch.save(checkpoint, os.path.join(opt.outf,'checkpoint.pth'))
+                AUC_val = AUC
             # log scalars
-            precision, recall, precision_mel, recall_mel = compute_mean_pecision_recall('val_results.csv', 'val.csv')
-            mAP, AUC, ROC = compute_metrics('val_results.csv', 'val.csv')
             writer.add_scalar('val/accuracy', correct/total, epoch)
-            writer.add_scalar('val/mean_precision', precision, epoch)
-            writer.add_scalar('val/mean_recall', recall, epoch)
+            writer.add_scalar('val/mean_precision', precision_mean, epoch)
+            writer.add_scalar('val/mean_recall', recall_mean, epoch)
             writer.add_scalar('val/precision_mel', precision_mel, epoch)
             writer.add_scalar('val/recall_mel', recall_mel, epoch)
-            writer.add_scalar('val/mAP', mAP, epoch)
+            writer.add_scalar('val/AP', AP, epoch)
             writer.add_scalar('val/AUC', AUC, epoch)
-            writer.add_image('curve/ROC', ROC, epoch)
-            print("\n[epoch %d] val result: accuracy %.2f%% \nmean precision %.2f%% mean recall %.2f%% \
-                    \nprecision for mel %.2f%% recall for mel %.2f%% \nmAP %.2f%% AUC %.4f\n" %
-                    (epoch+1, 100*correct/total, 100*precision, 100*recall, 100*precision_mel, 100*recall_mel, 100*mAP, AUC))
+            print("\n[epoch %d] val result: accuracy %.2f%%" % epoch+1, 100*correct/total)
+            print("\nmean precision %.2f%% mean recall %.2f%% \nprecision for mel %.2f%% recall for mel %.2f%%" %
+                    (100*precision_mean, 100*recall_mean, 100*precision_mel, 100*recall_mel))
+            print("\nAP %.4f AUC %.4f\n optimal AUC: %.4f" % (AP, AUC, AUC_val))
             # log images
             if opt.log_images:
                 print('\nlog images ...\n')

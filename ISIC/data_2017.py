@@ -56,9 +56,10 @@ def preprocess_data(root_dir, seg_dir='Train_Lesion'):
     melanoma = glob.glob(os.path.join(root_dir, 'Val', 'melanoma', '*.jpg')); melanoma.sort()
     nevus    = glob.glob(os.path.join(root_dir, 'Val', 'nevus', '*.jpg')); nevus.sort()
     sk       = glob.glob(os.path.join(root_dir, 'Val', 'seborrheic_keratosis', '*.jpg')); sk.sort()
-    melanoma_seg = glob.glob(os.path.join(root_dir, 'Val_Lesion', 'melanoma', '*.png')); melanoma_seg.sort()
-    nevus_seg    = glob.glob(os.path.join(root_dir, 'Val_Lesion', 'nevus', '*.png')); nevus_seg.sort()
-    sk_seg       = glob.glob(os.path.join(root_dir, 'Val_Lesion', 'seborrheic_keratosis', '*.png')); sk_seg.sort()
+    #### segmentation of val data is not used######
+    melanoma_seg = glob.glob(os.path.join(root_dir, 'Val', 'melanoma', '*.png')); melanoma_seg.sort()
+    nevus_seg    = glob.glob(os.path.join(root_dir, 'Val', 'nevus', '*.png')); nevus_seg.sort()
+    sk_seg       = glob.glob(os.path.join(root_dir, 'Val', 'seborrheic_keratosis', '*.png')); sk_seg.sort()
     with open('val.csv', 'wt', newline='') as csv_file:
         writer = csv.writer(csv_file, delimiter=',')
         for k in range(len(melanoma)):
