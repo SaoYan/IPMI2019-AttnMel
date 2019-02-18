@@ -217,8 +217,7 @@ def main():
                     responses = F.softmax(pred_val, dim=1).squeeze().cpu().numpy()
                     responses = [responses[i] for i in range(responses.shape[0])]
                     csv_writer.writerows(responses)
-            AP, AUC, precision_mean, precision_mel, recall_mean, recall_mel =
-                compute_metrics('val_results.csv', 'val.csv')
+            AP, AUC, precision_mean, precision_mel, recall_mean, recall_mel = compute_metrics('val_results.csv', 'val.csv')
             # save checkpoints
             print('\nsaving checkpoints ...\n')
             checkpoint = {
