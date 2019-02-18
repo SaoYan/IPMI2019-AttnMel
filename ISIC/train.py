@@ -62,7 +62,7 @@ def _worker_init_fn_():
 def main():
     # load data
     print('\nloading the dataset ...')
-    num_aug = 1
+    num_aug = 2
     if opt.over_sample:
         print('data is offline oversampled ...')
         train_file = 'train_oversample.csv'
@@ -230,7 +230,7 @@ def main():
             print("\n[epoch %d] val result: accuracy %.2f%%" % epoch+1, 100*correct/total)
             print("\nmean precision %.2f%% mean recall %.2f%% \nprecision for mel %.2f%% recall for mel %.2f%%" %
                     (100*precision_mean, 100*recall_mean, 100*precision_mel, 100*recall_mel))
-            print("\nAP %.4f AUC %.4f\n optimal AUC: %.4f" % (AP, AUC, AUC_val))
+            print("\nAP %.4f AUC %.4f optimal AUC: %.4f\n" % (AP, AUC, AUC_val))
             # log images
             if opt.log_images:
                 print('\nlog images ...\n')

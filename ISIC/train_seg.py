@@ -62,7 +62,7 @@ def _worker_init_fn_():
 def main():
     # load data
     print('\nloading the dataset ...')
-    num_aug = 1
+    num_aug = 2
     if opt.over_sample:
         print('data is offline oversampled ...')
         train_file = 'train_oversample.csv'
