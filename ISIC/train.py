@@ -159,7 +159,7 @@ def main():
         scheduler.step()
         current_lr = optimizer.param_groups[0]['lr']
         writer.add_scalar('train/learning_rate', current_lr, epoch)
-        print("\nepoch %d learning rate %f\n" % (epoch, current_lr))
+        print("\nepoch %d learning rate %f\n" % (epoch+1, current_lr))
         # run for one epoch
         for aug in range(num_aug):
             for i, data in enumerate(trainloader, 0):
