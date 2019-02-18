@@ -26,7 +26,7 @@ torch.backends.cudnn.benchmark = True
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 device_ids = [0]
 
-parser = argparse.ArgumentParser(description="Attn-Skin-train")
+parser = argparse.ArgumentParser()
 
 parser.add_argument("--preprocess", action='store_true', help="run preprocess_data")
 
@@ -53,13 +53,12 @@ def _worker_init_fn_():
 def main():
     # load data
     print('\nloading the dataset ...')
+    num_aug = 1
     if opt.over_sample:
         print('data is offline oversampled ...')
-        num_aug = 1
         train_file = 'train_oversample.csv'
     else:
         print('no offline oversampled ...')
-        num_aug = 5
         train_file = 'train.csv'
     transform_train = transforms.Compose([
         RatioCenterCrop(1.0),
@@ -130,8 +129,8 @@ def main():
     print('done\n')
 
     # optimizer
-    optimizer = optim.SGD(model.parameters(), lr=opt.lr, momentum=0.9, weight_decay=5e-4)
-    lr_lambda = lambda epoch : np.power(0.5, epoch//10)
+    optimizer = optim.SGD(model.parameters(), lr=opt.lr, momentum=0.9, weight_decay=1e-4, nesterov=True)
+    lr_lambda = lambda epoch : np.power(0.1, epoch//10)
     scheduler = lr_scheduler.LambdaLR(optimizer, lr_lambda=lr_lambda)
 
     # training
@@ -149,7 +148,7 @@ def main():
         scheduler.step()
         current_lr = optimizer.param_groups[0]['lr']
         writer.add_scalar('train/learning_rate', current_lr, epoch)
-        print("\nepoch %d learning rate %f\n" % (epoch, current_lr))
+        print("\nepoch %d learning rate %f\n" % (epoch+1, current_lr))
         # run for one epoch
         for aug in range(num_aug):
             for i, data in enumerate(trainloader, 0):
@@ -177,7 +176,7 @@ def main():
                     writer.add_scalar('train/loss', loss.item(), step)
                     writer.add_scalar('train/accuracy', accuracy, step)
                     writer.add_scalar('train/EMA_accuracy', EMA_accuracy, step)
-                    print("[epoch %d][aug %d/%d][%d/%d] loss %.4f accuracy %.2f%% running avg accuracy %.2f%%"
+                    print("[epoch %d][aug %d/%d][iter %d/%d] loss %.4f accuracy %.2f%% running avg accuracy %.2f%%"
                         % (epoch+1, aug+1, num_aug, i+1, len(trainloader), loss.item(), (100*accuracy), (100*EMA_accuracy)))
                 step += 1
         # the end of each epoch
@@ -214,20 +213,6 @@ def main():
             ####
             print(precision)
             print(recall)
-            writer.add_scalar('precision/MEL',   precision[0], epoch)
-            writer.add_scalar('precision/NV',    precision[1], epoch)
-            writer.add_scalar('precision/BCC',   precision[2], epoch)
-            writer.add_scalar('precision/AKIEC', precision[3], epoch)
-            writer.add_scalar('precision/BKL',   precision[4], epoch)
-            writer.add_scalar('precision/DF',    precision[5], epoch)
-            writer.add_scalar('precision/VASC',  precision[6], epoch)
-            writer.add_scalar('recall/MEL',   recall[0], epoch)
-            writer.add_scalar('recall/NV',    recall[1], epoch)
-            writer.add_scalar('recall/BCC',   recall[2], epoch)
-            writer.add_scalar('recall/AKIEC', recall[3], epoch)
-            writer.add_scalar('recall/BKL',   recall[4], epoch)
-            writer.add_scalar('recall/DF',    recall[5], epoch)
-            writer.add_scalar('recall/VASC',  recall[6], epoch)
             ####
             print("\n[epoch %d] val result: accuracy %.2f%% \nmean precision %.2f%% mean recall %.2f%%\n" %
                 (epoch+1, 100*correct/total, 100*np.mean(precision), 100*np.mean(recall)))

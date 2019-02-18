@@ -22,7 +22,7 @@ torch.backends.cudnn.benchmark = True
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 device_ids = [0]
 
-parser = argparse.ArgumentParser(description="Attn-SKin-test")
+parser = argparse.ArgumentParser()
 
 parser.add_argument("--preprocess", action='store_true', help="run preprocess_data")
 
