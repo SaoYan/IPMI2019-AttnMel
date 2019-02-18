@@ -236,7 +236,7 @@ def main():
             writer.add_scalar('val/recall_mel', recall_mel, epoch)
             writer.add_scalar('val/AP', AP, epoch)
             writer.add_scalar('val/AUC', AUC, epoch)
-            print("\n[epoch %d] val result: accuracy %.2f%%" % epoch+1, 100*correct/total)
+            print("\n[epoch %d] val result: accuracy %.2f%%" % (epoch+1, 100*correct/total))
             print("\nmean precision %.2f%% mean recall %.2f%% \nprecision for mel %.2f%% recall for mel %.2f%%" %
                     (100*precision_mean, 100*recall_mean, 100*precision_mel, 100*recall_mel))
             print("\nAP %.4f AUC %.4f\n optimal AUC: %.4f" % (AP, AUC, AUC_val))
