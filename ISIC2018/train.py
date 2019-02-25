@@ -137,6 +137,7 @@ def main():
     print('\nstart training ...\n')
     step = 0
     EMA_accuracy = 0
+    recall_val = 0
     writer = SummaryWriter(opt.outf)
     if opt.log_images:
         data_iter = iter(valloader)
@@ -181,14 +182,6 @@ def main():
                 step += 1
         # the end of each epoch
         model.eval()
-        print('\none epoch done, saving checkpoints ...\n')
-        checkpoint = {
-            'state_dict': model.module.state_dict(),
-            'opt_state_dict': optimizer.state_dict(),
-        }
-        torch.save(checkpoint, os.path.join(opt.outf,'checkpoint.pth'))
-        if epoch % 10 == 9:
-            torch.save(checkpoint, os.path.join(opt.outf, 'checkpoint_%d.pth' % epoch))
         total = 0
         correct = 0
         with torch.no_grad():
@@ -205,17 +198,25 @@ def main():
                     responses = F.softmax(pred_val, dim=1).squeeze().cpu().numpy()
                     responses = [responses[i] for i in range(responses.shape[0])]
                     csv_writer.writerows(responses)
-            # log scalars
             precision, recall = compute_mean_pecision_recall('val_results.csv', 'val.csv')
+            # save checkpoints
+            print('\none epoch done, saving checkpoints ...\n')
+            checkpoint = {
+                'state_dict': model.module.state_dict(),
+                'opt_state_dict': optimizer.state_dict(),
+            }
+            torch.save(checkpoint, os.path.join(opt.outf,'checkpoint_latest.pth'))
+            if np.mean(recall) > recall_val:
+                torch.save(checkpoint, os.path.join(opt.outf, 'checkpoint.pth'))
+                recall_val = np.mean(recall)
+            # log scalars
             writer.add_scalar('val/accuracy', correct/total, epoch)
             writer.add_scalar('val/mean_precision', np.mean(precision), epoch)
             writer.add_scalar('val/mean_recall', np.mean(recall), epoch)
-            ####
             print(precision)
             print(recall)
-            ####
-            print("\n[epoch %d] val result: accuracy %.2f%% \nmean precision %.2f%% mean recall %.2f%%\n" %
-                (epoch+1, 100*correct/total, 100*np.mean(precision), 100*np.mean(recall)))
+            print("\n[epoch %d] val result: accuracy %.2f%% \nmean precision %.2f%% mean recall %.2f%% optimal mean recall %.2f%%\n" %
+                (epoch+1, 100*correct/total, 100*np.mean(precision), 100*np.mean(recall), 100*recall_val))
             # log images
             if opt.log_images:
                 print('\nlog images ...\n')
