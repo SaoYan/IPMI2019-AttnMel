@@ -21,7 +21,7 @@ from transforms import *
 '''
 switch between ISIC 2016 and 2017
 modify the following contents:
-1. import
+1. import from data_2016 / import from data_2017
 2. num_aug: x2 for ISIC 2017; x5 for ISIC 2016
 3. root_dir of preprocess_data
 4. mean and std of transforms.Normalize

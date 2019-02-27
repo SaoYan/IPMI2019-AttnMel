@@ -3,6 +3,7 @@ import csv
 import random
 import argparse
 import numpy as np
+from tensorboardX import SummaryWriter
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
@@ -10,13 +11,21 @@ import torch.optim as optim
 import torch.optim.lr_scheduler as lr_scheduler
 import torchvision
 import torchvision.utils as utils
-import torchvision.transforms as transforms
-from tensorboardX import SummaryWriter
-from networks import AttnVGG, VGG
-from loss import FocalLoss
-from data import preprocess_data, ISIC2018
+import torchvision.transforms as torch_transforms
+from networks import AttnVGG
+from loss import FocalLoss, DiceLoss
+from data_2017 import preprocess_data, ISIC
 from utilities import *
 from transforms import *
+
+'''
+switch between ISIC 2016 and 2017
+modify the following contents:
+1. import from data_2016 / import from data_2017
+2. num_aug: x2 for ISIC 2017; x5 for ISIC 2016
+3. root_dir of preprocess_data
+4. mean and std of transforms.Normalize
+'''
 
 os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"
 os.environ["CUDA_VISIBLE_DEVICES"] = "0"
@@ -53,53 +62,55 @@ def _worker_init_fn_():
 def main():
     # load data
     print('\nloading the dataset ...')
-    num_aug = 1
+    num_aug = 2
     if opt.over_sample:
         print('data is offline oversampled ...')
         train_file = 'train_oversample.csv'
     else:
-        print('no offline oversampled ...')
+        print('no offline oversampling ...')
         train_file = 'train.csv'
-    transform_train = transforms.Compose([
-        RatioCenterCrop(1.0),
-        Resize((256,256)),
-        RandomCrop((224,224)),
-        RandomRotate(),
-        RandomVerticalFlip(),
-        RandomHorizontalFlip(),
-        ToTensor(),
-        Normalize((0.7560,0.5222,0.5431), (0.0909, 0.1248, 0.1400))
+    im_size = 224
+    transform_train = torch_transforms.Compose([
+         RatioCenterCrop(0.8),
+         Resize((256,256)),
+         RandomCrop((224,224)),
+         RandomRotate(),
+         RandomHorizontalFlip(),
+         RandomVerticalFlip(),
+         ToTensor(),
+         Normalize((0.6820, 0.5312, 0.4736), (0.0840, 0.1140, 0.1282)) # ISIC 2017
+         # Normalize((0.7012, 0.5517, 0.4875), (0.0942, 0.1331, 0.1521)) # ISIC 2016
     ])
-    transform_val = transforms.Compose([
-        RatioCenterCrop(1.0),
-        Resize((256,256)),
-        CenterCrop((224,224)),
-        ToTensor(),
-        Normalize((0.7560,0.5222,0.5431), (0.0909, 0.1248, 0.1400))
+    transform_val = torch_transforms.Compose([
+         RatioCenterCrop(0.8),
+         Resize((256,256)),
+         CenterCrop((224,224)),
+         ToTensor(),
+         Normalize((0.6820, 0.5312, 0.4736), (0.0840, 0.1140, 0.1282)) # ISIC 2017
+         # Normalize((0.7012, 0.5517, 0.4875), (0.0942, 0.1331, 0.1521)) # ISIC 2016
     ])
-    trainset = ISIC2018(csv_file=train_file, transform=transform_train)
+    trainset = ISIC(csv_file=train_file, transform=transform_train)
     trainloader = torch.utils.data.DataLoader(trainset, batch_size=opt.batch_size, shuffle=True,
         num_workers=8, worker_init_fn=_worker_init_fn_(), drop_last=True)
-    valset = ISIC2018(csv_file='val.csv', transform=transform_val)
+    valset = ISIC(csv_file='val.csv', transform=transform_val)
     valloader = torch.utils.data.DataLoader(valset, batch_size=64, shuffle=False, num_workers=8)
-    # mean & std of the datase
+    print('done\n')
     '''
     Mean = torch.zeros(3)
-    Std  = torch.zeros(3)
+    Std = torch.zeros(3)
     for data in trainloader:
-        I = data['image']
+        I, __, L = data
         N, C, __, __ = I.size()
         Mean += I.view(N,C,-1).mean(2).sum(0)
         Std += I.view(N,C,-1).std(2).sum(0)
     Mean /= len(trainset)
-    Std /= len(trainset)
+    Std  /= len(trainset)
     print('mean: '), print(Mean.numpy())
     print('std: '), print(Std.numpy())
     return
     '''
-    print('done\n')
 
-    # load network
+    # load models
     print('\nloading the model ...')
 
     if not opt.no_attention:
@@ -111,9 +122,8 @@ def main():
     else:
         print('turn off attention ...')
 
-    net = AttnVGG(num_classes=7, attention=not opt.no_attention, normalize_attn=opt.normalize_attn)
-    # net = VGG(num_classes=7, gap=False)
-
+    net = AttnVGG(num_classes=2, attention=not opt.no_attention, normalize_attn=opt.normalize_attn)
+    dice = DiceLoss()
     if opt.focal_loss:
         print('use focal loss ...')
         criterion = FocalLoss(gama=2., size_average=True, weight=None)
@@ -126,6 +136,7 @@ def main():
     print('\nmoving models to GPU ...')
     model = nn.DataParallel(net, device_ids=device_ids).to(device)
     criterion.to(device)
+    dice.to(device)
     print('done\n')
 
     # optimizer
@@ -137,7 +148,7 @@ def main():
     print('\nstart training ...\n')
     step = 0
     EMA_accuracy = 0
-    recall_val = 0
+    AUC_val = 0
     writer = SummaryWriter(opt.outf)
     if opt.log_images:
         data_iter = iter(valloader)
@@ -157,12 +168,18 @@ def main():
                 model.train()
                 model.zero_grad()
                 optimizer.zero_grad()
-                inputs, labels = data['image'], data['label']
-                inputs, labels = inputs.to(device), labels.to(device)
+                inputs, seg, labels = data['image'], data['image_seg'], data['label']
+                seg = seg[:,-1:,:,:]
+                seg_1 = F.adaptive_avg_pool2d(seg, im_size//opt.base_up_factor)
+                seg_2 = F.adaptive_avg_pool2d(seg, im_size//opt.base_up_factor//2)
+                inputs, seg_1, seg_2, labels = inputs.to(device), seg_1.to(device), seg_2.to(device), labels.to(device)
                 # forward
-                pred, __, __ = model(inputs)
+                pred, a1, a2 = model(inputs)
                 # backward
-                loss = criterion(pred, labels)
+                loss_c = criterion(pred, labels)
+                loss_seg1 = dice(a1, seg_1)
+                loss_seg2 = dice(a2, seg_2)
+                loss = loss_c + 0.001 * loss_seg1 + 0.01 * loss_seg2
                 loss.backward()
                 optimizer.step()
                 # display results
@@ -173,14 +190,16 @@ def main():
                     total = labels.size(0)
                     correct = torch.eq(predict, labels).sum().double().item()
                     accuracy = correct / total
-                    EMA_accuracy = 0.98*EMA_accuracy + 0.02*accuracy
-                    writer.add_scalar('train/loss', loss.item(), step)
+                    EMA_accuracy = 0.9*EMA_accuracy + 0.1*accuracy
+                    writer.add_scalar('train/loss_c', loss_c.item(), step)
+                    writer.add_scalar('train/loss_seg1', loss_seg1.item(), step)
+                    writer.add_scalar('train/loss_seg2', loss_seg2.item(), step)
                     writer.add_scalar('train/accuracy', accuracy, step)
                     writer.add_scalar('train/EMA_accuracy', EMA_accuracy, step)
-                    print("[epoch %d][aug %d/%d][iter %d/%d] loss %.4f accuracy %.2f%% running avg accuracy %.2f%%"
-                        % (epoch+1, aug+1, num_aug, i+1, len(trainloader), loss.item(), (100*accuracy), (100*EMA_accuracy)))
+                    print("[epoch %d][aug %d/%d][iter %d/%d] loss_c %.4f loss_seg1 %.4f loss_seg2 %.4f accuracy %.2f%% EMA %.2f%%"
+                        % (epoch+1, aug+1, num_aug, i+1, len(trainloader), loss.item(), loss_seg1.item(), loss_seg2.item(), (100*accuracy), (100*EMA_accuracy)))
                 step += 1
-        # the end of each epoch
+        # the end of each epoch - validation results
         model.eval()
         total = 0
         correct = 0
@@ -194,34 +213,42 @@ def main():
                     predict = torch.argmax(pred_val, 1)
                     total += labels_val.size(0)
                     correct += torch.eq(predict, labels_val).sum().double().item()
-                    # record prediction
+                    # record predictions
                     responses = F.softmax(pred_val, dim=1).squeeze().cpu().numpy()
                     responses = [responses[i] for i in range(responses.shape[0])]
                     csv_writer.writerows(responses)
-            precision, recall = compute_mean_pecision_recall('val_results.csv', 'val.csv')
+            AP, AUC, precision_mean, precision_mel, recall_mean, recall_mel = compute_metrics('val_results.csv', 'val.csv')
             # save checkpoints
-            print('\none epoch done, saving checkpoints ...\n')
+            print('\nsaving checkpoints ...\n')
             checkpoint = {
                 'state_dict': model.module.state_dict(),
                 'opt_state_dict': optimizer.state_dict(),
             }
-            torch.save(checkpoint, os.path.join(opt.outf,'checkpoint_latest.pth'))
-            if np.mean(recall) > recall_val:
-                torch.save(checkpoint, os.path.join(opt.outf, 'checkpoint.pth'))
-                recall_val = np.mean(recall)
+            torch.save(checkpoint, os.path.join(opt.outf, 'checkpoint_latest.pth'))
+            if AUC > AUC_val: # save optimal validation model
+                torch.save(checkpoint, os.path.join(opt.outf,'checkpoint.pth'))
+                AUC_val = AUC
             # log scalars
             writer.add_scalar('val/accuracy', correct/total, epoch)
-            writer.add_scalar('val/mean_precision', np.mean(precision), epoch)
-            writer.add_scalar('val/mean_recall', np.mean(recall), epoch)
-            print(precision)
-            print(recall)
-            print("\n[epoch %d] val result: accuracy %.2f%% \nmean precision %.2f%% mean recall %.2f%% optimal mean recall %.2f%%\n" %
-                (epoch+1, 100*correct/total, 100*np.mean(precision), 100*np.mean(recall), 100*recall_val))
+            writer.add_scalar('val/mean_precision', precision_mean, epoch)
+            writer.add_scalar('val/mean_recall', recall_mean, epoch)
+            writer.add_scalar('val/precision_mel', precision_mel, epoch)
+            writer.add_scalar('val/recall_mel', recall_mel, epoch)
+            writer.add_scalar('val/AP', AP, epoch)
+            writer.add_scalar('val/AUC', AUC, epoch)
+            print("\n[epoch %d] val result: accuracy %.2f%%" % (epoch+1, 100*correct/total))
+            print("\nmean precision %.2f%% mean recall %.2f%% \nprecision for mel %.2f%% recall for mel %.2f%%" %
+                    (100*precision_mean, 100*recall_mean, 100*precision_mel, 100*recall_mel))
+            print("\nAP %.4f AUC %.4f\n optimal AUC: %.4f" % (AP, AUC, AUC_val))
             # log images
             if opt.log_images:
                 print('\nlog images ...\n')
                 I_train = utils.make_grid(inputs[0:16,:,:,:], nrow=4, normalize=True, scale_each=True)
+                I_seg_1 = utils.make_grid(seg_1[0:16,:,:,:], nrow=4, normalize=True, scale_each=True)
+                I_seg_2 = utils.make_grid(seg_2[0:16,:,:,:], nrow=4, normalize=True, scale_each=True)
                 writer.add_image('train/image', I_train, epoch)
+                writer.add_image('train/seg1', I_seg_1, epoch)
+                writer.add_image('train/seg2', I_seg_2, epoch)
                 if epoch == 0:
                     I_val = utils.make_grid(fixed_batch, nrow=4, normalize=True, scale_each=True)
                     writer.add_image('val/image', I_val, epoch)
@@ -252,5 +279,7 @@ def main():
 
 if __name__ == "__main__":
     if opt.preprocess:
-        preprocess_data(root_dir='../data_2018')
+        preprocess_data(root_dir='../data_2017', seg_dir='Train_Lesion')
+        # preprocess_data(root_dir='../data_2017', seg_dir='Train_Dermo')
+        # preprocess_data(root_dir='../data_2016')
     main()
