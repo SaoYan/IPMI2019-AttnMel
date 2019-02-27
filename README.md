@@ -7,8 +7,8 @@ Yiqi Yan, Jeremy Kawahara, and Ghassan Hamarneh, “Melanoma Recognition via Vis
 
 ***
 
-![]()  
-![]()  
+![](https://github.com/SaoYan/Attention-Skin/blob/master/assets/network.png)  
+![](https://github.com/SaoYan/Attention-Skin/blob/master/assets/atten.jpg)  
 
 ## Pre-traind models
 
