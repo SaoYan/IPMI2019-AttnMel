@@ -105,10 +105,10 @@ def main():
                     if not opt.no_attention:
                         __, a1, a2 = model.forward(images_test)
                         if a1 is not None:
-                            attn1, __ = visualize_attn(I_test, a1, up_factor=opt.base_up_factor, nrow=8)
+                            attn1 = visualize_attn(I_test, a1, up_factor=opt.base_up_factor, nrow=8)
                             writer.add_image('test/attention_map_1', attn1, i)
                         if a2 is not None:
-                            attn2, __ = visualize_attn(I_test, a2, up_factor=2*opt.base_up_factor, nrow=8)
+                            attn2 = visualize_attn(I_test, a2, up_factor=2*opt.base_up_factor, nrow=8)
                             writer.add_image('test/attention_map_2', attn2, i)
     AP, AUC, precision_mean, precision_mel, recall_mean, recall_mel = compute_metrics('test_results.csv', 'test.csv')
     print("\ntest result: accuracy %.2f%%" % (100*correct/total))

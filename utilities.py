@@ -20,7 +20,7 @@ def visualize_attn(I, a, up_factor, nrow):
     attn = np.float32(attn) / 255
     # add the heatmap to the image
     vis = 0.4 * img + 0.6 * attn
-    return torch.from_numpy(vis).permute(2,0,1), [torch.max(a).item(),torch.min(a).item(),torch.mean(a).item()]
+    return torch.from_numpy(vis).permute(2,0,1)
 
 def compute_metrics(result_file, gt_file, threshold=0.5):
     # groundtruth

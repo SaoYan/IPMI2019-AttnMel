@@ -244,24 +244,18 @@ def main():
                 # training data
                 __, a1, a2 = model(inputs[0:16,:,:,:])
                 if a1 is not None:
-                    attn1, stat = visualize_attn(I_train, a1, up_factor=opt.base_up_factor, nrow=4)
+                    attn1 = visualize_attn(I_train, a1, up_factor=opt.base_up_factor, nrow=4)
                     writer.add_image('train/attention_map_1', attn1, epoch)
-                    writer.add_scalar('train_a1/max', stat[0], epoch)
-                    writer.add_scalar('train_a1/min', stat[1], epoch)
-                    writer.add_scalar('train_a1/mean', stat[2], epoch)
                 if a2 is not None:
-                    attn2, stat = visualize_attn(I_train, a2, up_factor=2*opt.base_up_factor, nrow=4)
+                    attn2 = visualize_attn(I_train, a2, up_factor=2*opt.base_up_factor, nrow=4)
                     writer.add_image('train/attention_map_2', attn2, epoch)
-                    writer.add_scalar('train_a2/max', stat[0], epoch)
-                    writer.add_scalar('train_a2/min', stat[1], epoch)
-                    writer.add_scalar('train_a2/mean', stat[2], epoch)
                 # val data
                 __, a1, a2 = model(fixed_batch)
                 if a1 is not None:
-                    attn1, __ = visualize_attn(I_val, a1, up_factor=opt.base_up_factor, nrow=4)
+                    attn1 = visualize_attn(I_val, a1, up_factor=opt.base_up_factor, nrow=4)
                     writer.add_image('val/attention_map_1', attn1, epoch)
                 if a2 is not None:
-                    attn2, __ = visualize_attn(I_val, a2, up_factor=2*opt.base_up_factor, nrow=4)
+                    attn2 = visualize_attn(I_val, a2, up_factor=2*opt.base_up_factor, nrow=4)
                     writer.add_image('val/attention_map_2', attn2, epoch)
 
 if __name__ == "__main__":
