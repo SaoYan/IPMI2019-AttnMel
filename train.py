@@ -58,7 +58,7 @@ def main():
     if opt.dataset == "ISIC2016":
         num_aug = 5
         normalize = Normalize((0.7012, 0.5517, 0.4875), (0.0942, 0.1331, 0.1521))
-    else if opt.dataset == "ISIC2017":
+    elif opt.dataset == "ISIC2017":
         num_aug = 2
         normalize = Normalize((0.6820, 0.5312, 0.4736), (0.0840, 0.1140, 0.1282))
     if opt.over_sample:
@@ -244,6 +244,6 @@ if __name__ == "__main__":
     if opt.preprocess:
         if opt.dataset == "ISIC2016":
             preprocess_data(root_dir='../data_2016')
-        else if opt.dataset == "ISIC2017":
+        elif opt.dataset == "ISIC2017":
             preprocess_data(root_dir='../data_2017', seg_dir='Train_Lesion')
     main()

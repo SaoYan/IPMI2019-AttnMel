@@ -43,7 +43,7 @@ def main():
     assert opt.dataset == "ISIC2016" or opt.dataset == "ISIC2017"
     if opt.dataset == "ISIC2016":
         normalize = Normalize((0.7012, 0.5517, 0.4875), (0.0942, 0.1331, 0.1521))
-    else if opt.dataset == "ISIC2017":
+    elif opt.dataset == "ISIC2017":
         normalize = Normalize((0.6820, 0.5312, 0.4736), (0.0840, 0.1140, 0.1282))
     transform_test = torch_transforms.Compose([
          RatioCenterCrop(0.8),
@@ -117,6 +117,6 @@ if __name__ == "__main__":
     if opt.preprocess:
         if opt.dataset == "ISIC2016":
             preprocess_data(root_dir='../data_2017', seg_dir='Train_Lesion')
-        else if opt.dataset == "ISIC2017":
+        elif opt.dataset == "ISIC2017":
             preprocess_data(root_dir='../data_2016')
     main()
