@@ -14,18 +14,9 @@ import torchvision.utils as utils
 import torchvision.transforms as torch_transforms
 from networks import AttnVGG
 from loss import FocalLoss, DiceLoss
-from data_2017 import preprocess_data, ISIC
+from data import preprocess_data_2016, preprocess_data_2017, ISIC
 from utilities import *
 from transforms import *
-
-'''
-switch between ISIC 2016 and 2017
-modify the following contents:
-1. import from data_2016 / import from data_2017
-2. num_aug: x2 for ISIC 2017; x5 for ISIC 2016
-3. root_dir of preprocess_data
-4. mean and std of transforms.Normalize
-'''
 
 os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"
 os.environ["CUDA_VISIBLE_DEVICES"] = "0"
@@ -38,6 +29,8 @@ device_ids = [0]
 parser = argparse.ArgumentParser()
 
 parser.add_argument("--preprocess", action='store_true', help="run preprocess_data")
+parser.add_argument("--dataset", type=str, default="ISIC2017", help='ISIC2017 / ISIC2016')
+parser.add_argument("--seg", type=str, default="lesion", help='lesion / dermo')
 
 parser.add_argument("--batch_size", type=int, default=32, help="batch size")
 parser.add_argument("--epochs", type=int, default=50, help="number of epochs")
@@ -62,7 +55,13 @@ def _worker_init_fn_():
 def main():
     # load data
     print('\nloading the dataset ...')
-    num_aug = 2
+    assert opt.dataset == "ISIC2016" or opt.dataset == "ISIC2017"
+    if opt.dataset == "ISIC2016":
+        num_aug = 5
+        normalize = Normalize((0.7012, 0.5517, 0.4875), (0.0942, 0.1331, 0.1521))
+    else if opt.dataset == "ISIC2017":
+        num_aug = 2
+        normalize = Normalize((0.6820, 0.5312, 0.4736), (0.0840, 0.1140, 0.1282))
     if opt.over_sample:
         print('data is offline oversampled ...')
         train_file = 'train_oversample.csv'
@@ -78,16 +77,14 @@ def main():
          RandomHorizontalFlip(),
          RandomVerticalFlip(),
          ToTensor(),
-         Normalize((0.6820, 0.5312, 0.4736), (0.0840, 0.1140, 0.1282)) # ISIC 2017
-         # Normalize((0.7012, 0.5517, 0.4875), (0.0942, 0.1331, 0.1521)) # ISIC 2016
+         normalize
     ])
     transform_val = torch_transforms.Compose([
          RatioCenterCrop(0.8),
          Resize((256,256)),
          CenterCrop((224,224)),
          ToTensor(),
-         Normalize((0.6820, 0.5312, 0.4736), (0.0840, 0.1140, 0.1282)) # ISIC 2017
-         # Normalize((0.7012, 0.5517, 0.4875), (0.0942, 0.1331, 0.1521)) # ISIC 2016
+         normalize
     ])
     trainset = ISIC(csv_file=train_file, transform=transform_train)
     trainloader = torch.utils.data.DataLoader(trainset, batch_size=opt.batch_size, shuffle=True,
@@ -95,20 +92,6 @@ def main():
     valset = ISIC(csv_file='val.csv', transform=transform_val)
     valloader = torch.utils.data.DataLoader(valset, batch_size=64, shuffle=False, num_workers=8)
     print('done\n')
-    '''
-    Mean = torch.zeros(3)
-    Std = torch.zeros(3)
-    for data in trainloader:
-        I, __, L = data
-        N, C, __, __ = I.size()
-        Mean += I.view(N,C,-1).mean(2).sum(0)
-        Std += I.view(N,C,-1).std(2).sum(0)
-    Mean /= len(trainset)
-    Std  /= len(trainset)
-    print('mean: '), print(Mean.numpy())
-    print('std: '), print(Std.numpy())
-    return
-    '''
 
     # load models
     print('\nloading the model ...')
@@ -273,7 +256,12 @@ def main():
 
 if __name__ == "__main__":
     if opt.preprocess:
-        preprocess_data(root_dir='../data_2017', seg_dir='Train_Lesion')
-        # preprocess_data(root_dir='../data_2017', seg_dir='Train_Dermo')
-        # preprocess_data(root_dir='../data_2016')
+        assert opt.seg == "lesion" or opt.seg == "dermo"
+        if opt.dataset == "ISIC2016":
+            preprocess_data(root_dir='../data_2016')
+        else if opt.dataset == "ISIC2017":
+            if opt.seg == 'lesion':
+                preprocess_data(root_dir='../data_2017', seg_dir='Train_Lesion')
+            else if opt.seg == 'dermo':
+                preprocess_data(root_dir='../data_2017', seg_dir='Train_Dermo')
     main()

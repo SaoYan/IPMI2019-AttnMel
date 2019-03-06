@@ -74,25 +74,47 @@ Switching between ISIC2016 and ISIC2017 data: modify the code following the comm
 > 3. root_dir of preprocess_data
 > 4. mean and std of transforms.Normalize
 
-Training without any attention map regularization (with only the classification loss, *AttnMel-CNN* in the paper):  
+1. Training without any attention map regularization (with only the classification loss, i.e, *AttnMel-CNN* in the paper):  
+
+* train on ISIC 2016  
 
 ```
-python train.py --preprocess --over_sample --focal_loss --log_images
+python train.py --dataset ISIC2016 --preprocess --over_sample --focal_loss --log_images
 ```
 
-
-Training with attention map regularization (*AttnMel-CNN-Dermo* or *AttnMel-CNN-Lesion* in the paper):  
-
-```
-python train_seg.py --preprocess --over_sample --focal_loss --log_images
-```
-
-Testing
+* train on ISIC 2017 (by default)  
 
 ```
-python test.py  
+python train.py --dataset ISIC2017 --preprocess --over_sample --focal_loss --log_images
 ```
 
+2. Training with attention map regularization (*AttnMel-CNN-Lesion* or *AttnMel-CNN-Dermo* in the paper):  
+
+We only train on ISIC2017 for these two models.  
+
+* *AttnMel-CNN-Lesion* (by default)  
+
+```
+python train_seg.py --seg lesion --preprocess --over_sample --focal_loss --log_images
+```
+
+* *AttnMel-CNN-Dermo*  
+
+```
+python train_seg.py --seg dermo --preprocess --over_sample --focal_loss --log_images
+```
+
+3. Testing
+
+```
+python test.py --dataset ISIC2016  
+```
+
+or
+
+```
+python test.py --dataset ISIC2017  
+```
 
 ## LICENSE  
 

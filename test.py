@@ -11,17 +11,9 @@ import torchvision.utils as utils
 import torchvision.transforms as torch_transforms
 from networks import AttnVGG, VGG
 from loss import FocalLoss
-from data_2017 import preprocess_data, ISIC
+from data import preprocess_data_2016, preprocess_data_2017, ISIC
 from utilities import *
 from transforms import *
-
-'''
-switch between ISIC 2016 and 2017
-modify the following contents:
-1. import
-2. root_dir of preprocess_data
-3. mean and std of transforms.Normalize
-'''
 
 os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"
 os.environ["CUDA_VISIBLE_DEVICES"] = "0"
@@ -34,6 +26,7 @@ device_ids = [0]
 parser = argparse.ArgumentParser()
 
 parser.add_argument("--preprocess", action='store_true', help="run preprocess_data")
+parser.add_argument("--dataset", type=str, default="ISIC2017", help='ISIC2017 / ISIC2016')
 
 parser.add_argument("--outf", type=str, default="logs_test", help='path of log files')
 parser.add_argument("--base_up_factor", type=int, default=8, help="number of epochs")
@@ -47,13 +40,17 @@ opt = parser.parse_args()
 def main():
     # load data
     print('\nloading the dataset ...')
+    assert opt.dataset == "ISIC2016" or opt.dataset == "ISIC2017"
+    if opt.dataset == "ISIC2016":
+        normalize = Normalize((0.7012, 0.5517, 0.4875), (0.0942, 0.1331, 0.1521))
+    else if opt.dataset == "ISIC2017":
+        normalize = Normalize((0.6820, 0.5312, 0.4736), (0.0840, 0.1140, 0.1282))
     transform_test = torch_transforms.Compose([
          RatioCenterCrop(0.8),
          Resize((256,256)),
          CenterCrop((224,224)),
          ToTensor(),
-         Normalize((0.6820, 0.5312, 0.4736), (0.0840, 0.1140, 0.1282)) # ISIC 2017
-         # Normalize((0.7012, 0.5517, 0.4875), (0.0942, 0.1331, 0.1521)) # ISIC 2016
+         normalize
     ])
     testset = ISIC(csv_file='test.csv', transform=transform_test)
     testloader = torch.utils.data.DataLoader(testset, batch_size=64, shuffle=False, num_workers=8)
@@ -118,6 +115,8 @@ def main():
 
 if __name__ == "__main__":
     if opt.preprocess:
-        preprocess_data(root_dir='../data_2017', seg_dir='Train_Lesion')
-        # preprocess_data(root_dir='../data_2016')
+        if opt.dataset == "ISIC2016":
+            preprocess_data(root_dir='../data_2017', seg_dir='Train_Lesion')
+        else if opt.dataset == "ISIC2017":
+            preprocess_data(root_dir='../data_2016')
     main()
