@@ -258,10 +258,10 @@ if __name__ == "__main__":
     if opt.preprocess:
         assert opt.seg == "lesion" or opt.seg == "dermo"
         if opt.dataset == "ISIC2016":
-            preprocess_data(root_dir='../data_2016')
+            preprocess_data_2016(root_dir='../data_2016')
         elif opt.dataset == "ISIC2017":
             if opt.seg == 'lesion':
-                preprocess_data(root_dir='../data_2017', seg_dir='Train_Lesion')
+                preprocess_data_2017(root_dir='../data_2017', seg_dir='Train_Lesion')
             elif opt.seg == 'dermo':
-                preprocess_data(root_dir='../data_2017', seg_dir='Train_Dermo')
+                preprocess_data_2017(root_dir='../data_2017', seg_dir='Train_Dermo')
     main()

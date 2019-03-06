@@ -243,7 +243,7 @@ def main():
 if __name__ == "__main__":
     if opt.preprocess:
         if opt.dataset == "ISIC2016":
-            preprocess_data(root_dir='../data_2016')
+            preprocess_data_2016(root_dir='../data_2016')
         elif opt.dataset == "ISIC2017":
-            preprocess_data(root_dir='../data_2017', seg_dir='Train_Lesion')
+            preprocess_data_2017(root_dir='../data_2017', seg_dir='Train_Lesion')
     main()
