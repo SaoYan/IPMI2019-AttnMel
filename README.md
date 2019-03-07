@@ -65,15 +65,6 @@ Under the folder *Train_Lesion* is the lesion segmentation map (ISIC2017 part I)
 
 ### 3. Training
 
-Switching between ISIC2016 and ISIC2017 data: modify the code following the comments at the beginning of the training script
-
-> switch between ISIC 2016 and 2017
-> modify the following contents:
-> 1. import from data_2016/import from data_2017
-> 2. num_aug: x2 for ISIC 2017; x5 for ISIC 2016
-> 3. root_dir of preprocess_data
-> 4. mean and std of transforms.Normalize
-
 1. Training without any attention map regularization (with only the classification loss, i.e, *AttnMel-CNN* in the paper):  
 
 * train on ISIC 2016  
