@@ -5,7 +5,9 @@ Code for our IPMI paper:
 
 Yiqi Yan, Jeremy Kawahara, and Ghassan Hamarneh, “Melanoma Recognition via Visual Attention”. To appear in International Conference on Information Processing in Medical Imaging (IPMI), 2019.  
 
-***
+***  
+
+[Project webpage](https://saoyan.github.io/posts/2019/03/07)   
 
 <img src="https://github.com/SaoYan/Attention-Skin/blob/master/assets/network.png" alt="network" width="500">  
 
