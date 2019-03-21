@@ -36,7 +36,7 @@ parser.add_argument("--batch_size", type=int, default=32, help="batch size")
 parser.add_argument("--epochs", type=int, default=50, help="number of epochs")
 parser.add_argument("--lr", type=float, default=0.01, help="initial learning rate")
 parser.add_argument("--outf", type=str, default="logs", help='path of log files')
-parser.add_argument("--base_up_factor", type=int, default=8, help="number of epochs")
+parser.add_argument("--base_up_factor", type=int, default=8, help="upsample ratio for attention visualization")
 
 parser.add_argument("--normalize_attn", action='store_true', help='if True, attention map is normalized by softmax; otherwise use sigmoid')
 parser.add_argument("--focal_loss", action='store_true', help='turn on focal loss (otherwise use cross entropy loss)')
