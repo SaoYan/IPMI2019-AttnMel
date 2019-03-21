@@ -19,7 +19,7 @@ def visualize_attn(I, a, up_factor, nrow):
     attn = cv2.cvtColor(attn, cv2.COLOR_BGR2RGB)
     attn = np.float32(attn) / 255
     # add the heatmap to the image
-    vis = 0.4 * img + 0.6 * attn
+    vis = 0.6 * img + 0.4 * attn
     return torch.from_numpy(vis).permute(2,0,1)
 
 def compute_metrics(result_file, gt_file, threshold=0.5):
