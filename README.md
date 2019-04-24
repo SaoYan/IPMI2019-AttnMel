@@ -3,7 +3,7 @@
 ***
 Code for our IPMI paper:  
 
-Yiqi Yan, Jeremy Kawahara, and Ghassan Hamarneh, “Melanoma Recognition via Visual Attention”. To appear in International Conference on Information Processing in Medical Imaging (IPMI), 2019.  
+[Yiqi Yan, Jeremy Kawahara, and Ghassan Hamarneh, “Melanoma Recognition via Visual Attention”. In International Conference on Information Processing in Medical Imaging (IPMI), 2019.](http://www.cs.sfu.ca/~hamarneh/ecopy/ipmi2019.pdf)    
 
 ***  
 
