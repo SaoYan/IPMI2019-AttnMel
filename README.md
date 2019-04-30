@@ -41,7 +41,7 @@ ISIC 2016 [download here](https://challenge.kitware.com/#challenge/560d7856cad3a
 
 ISIC 2017 [download here](https://challenge.kitware.com/#challenge/n/ISIC_2017%3A_Skin_Lesion_Analysis_Towards_Melanoma_Detection); organize the data as follows  
 
-* data_2016/  
+* data_2017/  
   * Train/  
     * melanoma/  
     * nevus/
