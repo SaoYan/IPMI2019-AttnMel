@@ -180,7 +180,7 @@ def main():
                     writer.add_scalar('train/accuracy', accuracy, step)
                     writer.add_scalar('train/EMA_accuracy', EMA_accuracy, step)
                     print("[epoch %d][aug %d/%d][iter %d/%d] loss_c %.4f loss_seg1 %.4f loss_seg2 %.4f accuracy %.2f%% EMA %.2f%%"
-                        % (epoch+1, aug+1, num_aug, i+1, len(trainloader), loss.item(), loss_seg1.item(), loss_seg2.item(), (100*accuracy), (100*EMA_accuracy)))
+                        % (epoch+1, aug+1, num_aug, i+1, len(trainloader), loss_c.item(), loss_seg1.item(), loss_seg2.item(), (100*accuracy), (100*EMA_accuracy)))
                 step += 1
         # the end of each epoch - validation results
         model.eval()
