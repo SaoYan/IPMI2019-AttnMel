@@ -1,6 +1,6 @@
 # Melanoma Recognition via Visual Attention  
 
-**WARNING** If you are using PyTorch >-= 1.1.0, be sure to modify the code following [this instruction](https://pytorch.org/docs/stable/optim.html#how-to-adjust-learning-rate)
+**WARNING** If you are using PyTorch >= 1.1.0, be sure to modify the code following [this instruction](https://pytorch.org/docs/stable/optim.html#how-to-adjust-learning-rate)
 
 >Prior to PyTorch 1.1.0, the learning rate scheduler was expected to be called before the optimizer’s update; 1.1.0 changed this behavior in a BC-breaking way. If you use the learning rate scheduler (calling scheduler.step()) before the optimizer’s update (calling optimizer.step()), this will skip the first value of the learning rate schedule. If you are unable to reproduce results after upgrading to PyTorch 1.1.0, please check if you are calling scheduler.step() at the wrong time.
 
