@@ -12,13 +12,13 @@ Code for our IPMI paper:
 
 Cite our paper by:
 
-@inproceedings{yan2019melanoma,
-  title={Melanoma Recognition via Visual Attention},
-  author={Yan, Yiqi and Kawahara, Jeremy and Hamarneh, Ghassan},
-  booktitle={International Conference on Information Processing in Medical Imaging},
-  pages={793--804},
-  year={2019},
-  organization={Springer}
+@inproceedings{yan2019melanoma,  
+  title={Melanoma Recognition via Visual Attention},  
+  author={Yan, Yiqi and Kawahara, Jeremy and Hamarneh, Ghassan},  
+  booktitle={International Conference on Information Processing in Medical Imaging},  
+  pages={793--804},  
+  year={2019},  
+  organization={Springer}. 
 }
 
 ***  
