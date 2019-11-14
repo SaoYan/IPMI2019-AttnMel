@@ -18,8 +18,8 @@ Cite our paper by:
   booktitle={International Conference on Information Processing in Medical Imaging},  
   pages={793--804},  
   year={2019},  
-  organization={Springer}. 
-}
+  organization={Springer}  
+}  
 
 ***  
 
