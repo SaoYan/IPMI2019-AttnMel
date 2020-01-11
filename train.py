@@ -3,15 +3,18 @@ import csv
 import random
 import argparse
 import numpy as np
-from tensorboardX import SummaryWriter
+
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
 import torch.optim as optim
 import torch.optim.lr_scheduler as lr_scheduler
+from torch.utils.tensorboard import SummaryWriter
+
 import torchvision
 import torchvision.utils as utils
 import torchvision.transforms as torch_transforms
+
 from networks import AttnVGG, VGG
 from loss import FocalLoss
 from data import preprocess_data_2016, preprocess_data_2017, ISIC
@@ -137,8 +140,6 @@ def main():
         fixed_batch = fixed_batch['image'][0:16,:,:,:].to(device)
     for epoch in range(opt.epochs):
         torch.cuda.empty_cache()
-        # adjust learning rate
-        scheduler.step()
         current_lr = optimizer.param_groups[0]['lr']
         writer.add_scalar('train/learning_rate', current_lr, epoch)
         print("\nepoch %d learning rate %f\n" % (epoch+1, current_lr))
@@ -172,6 +173,8 @@ def main():
                     print("[epoch %d][aug %d/%d][iter %d/%d] loss %.4f accuracy %.2f%% EMA_accuracy %.2f%%"
                         % (epoch+1, aug+1, num_aug, i+1, len(trainloader), loss.item(), (100*accuracy), (100*EMA_accuracy)))
                 step += 1
+        # adjust learning rate
+        scheduler.step()
         # the end of each epoch - validation results
         model.eval()
         total = 0

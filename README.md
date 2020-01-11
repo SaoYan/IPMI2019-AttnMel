@@ -1,16 +1,21 @@
 # Melanoma Recognition via Visual Attention  
 
-**WARNING** If you are using PyTorch >= 1.1.0, be sure to modify the code following [this instruction](https://pytorch.org/docs/stable/optim.html#how-to-adjust-learning-rate)
+***
+Updates:
+* Jan 2020: The code is upgraded to support PyTorch >= 1.1.0. If you are using an older version, be sure to read the following warnings.
+
+***
+
+**WARNING** If you are using PyTorch < 1.1.0, pay attention to the following two points.
+* You should adjust learning rate before calling optimizer.step(). Reference: [how to adjust learning rate](https://pytorch.org/docs/stable/optim.html#how-to-adjust-learning-rate).
 
 >Prior to PyTorch 1.1.0, the learning rate scheduler was expected to be called before the optimizer’s update; 1.1.0 changed this behavior in a BC-breaking way. If you use the learning rate scheduler (calling scheduler.step()) before the optimizer’s update (calling optimizer.step()), this will skip the first value of the learning rate schedule. If you are unable to reproduce results after upgrading to PyTorch 1.1.0, please check if you are calling scheduler.step() at the wrong time.
 
+* Prior to 1.1, Tensorboard is not natively supported in PyTorch. An alternative is to use [tensorboardX](https://github.com/lanpa/tensorboardX). Good news is the APIs are the same (in fact torch.utils.tensorboard === tensorboardX).  
 
 ***
-Code for our IPMI paper:  
 
-[Yiqi Yan, Jeremy Kawahara, and Ghassan Hamarneh, “Melanoma Recognition via Visual Attention”. In International Conference on Information Processing in Medical Imaging (IPMI), 2019.](http://www.cs.sfu.ca/~hamarneh/ecopy/ipmi2019.pdf)  
-
-Cite our paper by:
+If you use the code for your own reasearch, please cite the following paper :)
 
 @inproceedings{yan2019melanoma,  
   title={Melanoma Recognition via Visual Attention},  
@@ -21,13 +26,11 @@ Cite our paper by:
   organization={Springer}  
 }  
 
-***  
-
 [Project webpage](https://saoyan.github.io/posts/2019/03/07)   
 
 <img src="https://github.com/SaoYan/Attention-Skin/blob/master/assets/network.png" alt="network" width="500">  
 
-<img src="https://github.com/SaoYan/Attention-Skin/blob/master/assets/atten.jpg" alt="network" width="500">  
+<img src="https://github.com/SaoYan/Attention-Skin/blob/master/assets/atten.jpg" alt="visualization" width="500">  
 
 ## Pre-traind models
 
@@ -37,10 +40,8 @@ Cite our paper by:
 
 ### 1. Dependences  
 
-* PyTorch (>= 0.4, 1.0 preferred)  
+* PyTorch >= 1.1.0  
 * torchvision  
-* tensorboardX  
-* Pillow  
 * scikit-learn  
 
 ### 2. Data preparation  

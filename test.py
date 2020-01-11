@@ -2,10 +2,12 @@ import os
 import csv
 import argparse
 import numpy as np
-from tensorboardX import SummaryWriter
+
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
+from torch.utils.tensorboard import SummaryWriter
+
 import torchvision
 import torchvision.utils as utils
 import torchvision.transforms as torch_transforms
