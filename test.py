@@ -88,7 +88,7 @@ def main():
             for i, data in enumerate(testloader, 0):
                 images_test, labels_test = data['image'], data['label']
                 images_test, labels_test = images_test.to(device), labels_test.to(device)
-                pred_test, __, __ = model.forward(images_test)
+                pred_test, __, __ = model(images_test)
                 predict = torch.argmax(pred_test, 1)
                 total += labels_test.size(0)
                 correct += torch.eq(predict, labels_test).sum().double().item()
@@ -102,7 +102,7 @@ def main():
                     writer.add_image('test/image', I_test, i)
                     # accention maps
                     if not opt.no_attention:
-                        __, a1, a2 = model.forward(images_test)
+                        __, a1, a2 = model(images_test)
                         if a1 is not None:
                             attn1 = visualize_attn(I_test, a1, up_factor=opt.base_up_factor, nrow=8)
                             writer.add_image('test/attention_map_1', attn1, i)
