@@ -50,7 +50,7 @@ opt = parser.parse_args()
 
 def _worker_init_fn_():
     torch_seed = torch.initial_seed()
-    np_seed = torch_seed // 2**32-1
+    np_seed = torch_seed % 2**32-1
     random.seed(torch_seed)
     np.random.seed(np_seed)
 
